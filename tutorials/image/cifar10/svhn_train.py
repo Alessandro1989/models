@@ -95,20 +95,65 @@ def elaborateInput():
 
   pathDataDir = Path(data_dir, 'train')
   filenames = list(pathDataDir.glob('*.png'))
-  strpathImg3 = str(filenames[2].absolute())
-  stringPath_tensor = ops.convert_to_tensor(strpathImg3, dtype=dtypes.string)
-  img_b = tf.read_file(stringPath_tensor)
-  img_u = tf.image.decode_jpeg(img_b, channels=3)
+  #converte in a list of string paths
+  filenames = list(map(lambda x: str(x.absolute()), filenames))
+  # Create a queue that produces the filenames to read
+  # (he converts the strings in tensors) and add them to the fifoqueue
+  filename_queue = tf.train.string_input_producer(filenames)
+  reader = tf.WholeFileReader("reader")
+  #restituisce una stringa che rappresenta il contenuto, e una stringa per il filename
+  key,value = reader.read(filename_queue, "read")
+  img_u = tf.image.decode_jpeg(value, channels=3)
   img_f = tf.cast(img_u, tf.float32)
-  img_4 = tf.expand_dims(img_f,0)
-  channels = 3
-  img_opsummary = tf.summary.image("img", img_4,channels)
+  img_4 = tf.expand_dims(img_f, 0)
+  #img_i = tf.decode_raw(value, tf.int8) #w
 
-  sess = tf.InteractiveSession()
-  tf.global_variables_initializer().run()
-  imgop_sess = sess.run(img_opsummary)
-  train_writer = tf.summary.FileWriter(train_dir, sess.graph)
-  train_writer.add_summary(imgop_sess)
+  #img_f = tf.cast(img_i, tf.float32)
+  #img_f_reshape = tf.reshape();
+  #img_4 = tf.expand_dims(img_f,0)
+
+
+
+
+
+  #another stuff:
+  #strpathImg3 = str(filenames[2].absolute())
+  #stringPath_tensor = ops.convert_to_tensor(strpathImg3, dtype=dtypes.string)
+  #img_b = tf.read_file(stringPath_tensor)
+  #img_u = tf.image.decode_jpeg(img_b, channels=3)
+ # img_f = tf.cast(img_u, tf.float32)
+  #img_4 = tf.expand_dims(img_f,0)
+  #channels = 3
+
+  img_opsummary = tf.summary.image("img", img_4)
+
+  #sess = tf.InteractiveSession()
+  #tf.global_variables_initializer().run()
+  #imgop_sess = sess.run(img_opsummary)
+  #train_writer = tf.summary.FileWriter(train_dir, sess.graph)
+  #train_writer.add_summary(imgop_sess)
+  with tf.Session() as sess:
+    coord = tf.train.Coordinator()
+    threads = tf.train.start_queue_runners(coord=coord)
+    print(sess.run(key))
+    print(sess.run(value))
+    print(sess.run(img_f))
+    #attenzione: facendo così, lo shape di prova è 1D.. come fai a farlo 4d? e l'immagine puoi rappresentarla 1d? cosa rappresenta un numero? bohh
+    imgop_sess = sess.run(img_opsummary)
+    train_writer = tf.summary.FileWriter(train_dir, sess.graph)
+    train_writer.add_summary(imgop_sess)
+    #for i in range(1,len(filenames)):
+    for i in range(1, 20):
+      #perche solo 10 immagini per "slot"? (facendo così va un po' meglio ma mica tatno però!)
+      print(i)
+      img_opsummary = tf.summary.image(str(i), img_4, 1000)
+      for i in range(1,15):
+        imgop_sess = sess.run(img_opsummary)
+        train_writer.add_summary(imgop_sess)
+
+
+    coord.request_stop()
+    coord.join(threads)
 
   #https: // stackoverflow.com / questions / 34696845 / how - to - see - multiple - images - through - tf - image - summary
 
