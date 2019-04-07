@@ -2,11 +2,12 @@ import os
 import sys
 
 def main():
-    #dopo averlo convertito con math lab..
-    #if not exist error... dont' have.. convert hthe ..bla bla
+    read_input_train()
 
-    positionsDigits = [] #array of dictionary, example: {name:'2.png',top:'4.',left..,label:...}
+
+def read_input_train():
     with open("digitStruct_train.txt", "r") as f:
+        '''
         for line in f:
             tokens = line.split(';')
             digitsInfo = {}
@@ -25,11 +26,11 @@ def main():
 
         #with open("digitStruct_train.txt", "r") as f:
         f.seek(0)
+        '''
         digitDict = {}
 
         for line in f:
             tokens = line.split(';')
-
             digitsInfo = {}
             for token in tokens:
                 if ':' in token:
@@ -44,7 +45,7 @@ def main():
                             digitDict[value] = [digitsInfo] #'1.png': {'top':..., 'left':..., 'height':...,...}
                     else:
                         digitsInfo[key] = value
-
+        return digitDict
 
 
 if __name__ == '__main__':

@@ -10,6 +10,7 @@ from tensorflow.python.framework import ops
 from tensorflow.python.framework import dtypes
 from tensorflow.python.summary import summary
 from tensorflow.python.training import queue_runner
+import svhn_readInputTrain
 
 data_dir = '/tmp/svhn_data'
 train_dir = '/tmp/svhn_train'
@@ -97,6 +98,10 @@ def elaborateInput():
   filenames = list(pathDataDir.glob('*.png'))
   #converte in a list of string paths
   filenames = list(map(lambda x: str(x.absolute()), filenames))
+
+  #read positions of the digits
+  digitsInfo = svhn_readInputTrain.read_input_train()
+
   # Create a queue that produces the filenames to read
   # (he converts the strings in tensors) and add them to the fifoqueue
   filename_queue = tf.train.string_input_producer(filenames)
@@ -106,26 +111,27 @@ def elaborateInput():
   img_u = tf.image.decode_jpeg(value, channels=3)
   img_f = tf.cast(img_u, tf.float32)
   img_4 = tf.expand_dims(img_f, 0)
-  #img_i = tf.decode_raw(value, tf.int8) #w
 
-  #img_f = tf.cast(img_i, tf.float32)
-  #img_f_reshape = tf.reshape();
-  #img_4 = tf.expand_dims(img_f,0)
+  #Questo forse è meglio:
+  #[{'label': '3', 'top': '7', 'left': '52', 'width': '21', 'height': '46'}, {'label': '1', 'top': '10', 'left': '74', 'width': '15', 'height': '46'}]
+  offsetHeight = tf.placeholder(tf.int32)
+  offsetWith = tf.placeholder(tf.int32)
+  targetHeight = tf.placeholder(tf.int32)
+  targetWidth = tf.placeholder(tf.int32)
+  #  offsetHeight = [digitsInfo[key][0]['top']]
+  #offsetWith = [digitsInfo[key][0]['left']]
+  #targetHeight = [digitsInfo[key][0]['height']]
+  #targetWidth = [digitsInfo[key][0]['width']]
+  adigit = tf.image.crop_to_bounding_box(img_4,offsetHeight,offsetWith,targetHeight,targetWidth)
+  #tf.Tensor.Tensor()
+  #digitlabel = tf.tensor((key,adigit)
+
+  #digitImg = tf.image.crop_and_resize(img_4,boxes,?, )
+  #farlo su più cifre
+  #list digitimg = ["map.. for.. tf.image (funzione grafico che fa il resize e ti fa una lista di immagini.. e poi posso visualizzarla su tensorboard?.. o una a una? boh!
 
 
-
-
-
-  #another stuff:
-  #strpathImg3 = str(filenames[2].absolute())
-  #stringPath_tensor = ops.convert_to_tensor(strpathImg3, dtype=dtypes.string)
-  #img_b = tf.read_file(stringPath_tensor)
-  #img_u = tf.image.decode_jpeg(img_b, channels=3)
- # img_f = tf.cast(img_u, tf.float32)
-  #img_4 = tf.expand_dims(img_f,0)
-  #channels = 3
-
-  img_opsummary = tf.summary.image("img", img_4)
+  img_opsummary = tf.summary.image("img", adigit)
 
   #sess = tf.InteractiveSession()
   #tf.global_variables_initializer().run()
@@ -135,20 +141,27 @@ def elaborateInput():
   with tf.Session() as sess:
     coord = tf.train.Coordinator()
     threads = tf.train.start_queue_runners(coord=coord)
-    print(sess.run(key))
-    print(sess.run(value))
-    print(sess.run(img_f))
-    #attenzione: facendo così, lo shape di prova è 1D.. come fai a farlo 4d? e l'immagine puoi rappresentarla 1d? cosa rappresenta un numero? bohh
-    imgop_sess = sess.run(img_opsummary)
+    #print(sess.run(key))
     train_writer = tf.summary.FileWriter(train_dir, sess.graph)
-    train_writer.add_summary(imgop_sess)
     #for i in range(1,len(filenames)):
     for i in range(1, 20):
       #perche solo 10 immagini per "slot"? (facendo così va un po' meglio ma mica tatno però!)
       print(i)
-      img_opsummary = tf.summary.image(str(i), img_4, 1000)
+      #print(key.eval())
+      img_opsummary = tf.summary.image(str(i), adigit, 1000)
+      #img_opsummary.graph.collections
       for i in range(1,15):
-        imgop_sess = sess.run(img_opsummary)
+        #molti dubbi sul key.. 2 operazioni da radunare?.. per come è impostato non va affatto been
+        #(vedi il grafico in download e think
+
+        pngname = key.eval().decode("utf-8").split("\\")[-1]
+        #imgop_sess = sess.run(img_opsummary, feed_dict={offsetHeight: [digitsInfo[pngname][0]['top']], offsetWith: [digitsInfo[pngname][0]['left']],
+        #                                                targetHeight: [digitsInfo[pngname][0]['height']], targetWidth: [digitsInfo[pngname][0]['width']]})
+        top = digitsInfo[pngname][0]['top']
+        left = digitsInfo[pngname][0]['left']
+        height = digitsInfo[pngname][0]['height']
+        width = digitsInfo[pngname][0]['width']
+        imgop_sess = sess.run(img_opsummary, feed_dict={offsetHeight: top,offsetWith: top,targetHeight: 15, targetWidth: 15})
         train_writer.add_summary(imgop_sess)
 
 
