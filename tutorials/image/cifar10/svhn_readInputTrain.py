@@ -4,10 +4,10 @@ import sys
 from pathlib import Path, PureWindowsPath
 
 def main():
-    tryToOpenImage()
+    readInfoAndCropDigits()
     #read_input_train()
 
-def tryToOpenImage():
+def readInfoAndCropDigits():
     data_dir = '/tmp/svhn_data'
     data_dirDigits = '/tmp/svhn_dataDigits'
     pathDataDir = Path(data_dir, 'train')
@@ -22,9 +22,11 @@ def tryToOpenImage():
     if(not dir.exists()):
         dir.mkdir()
     else:
-        print("cleaning files..")
-        for file in list(dir.glob('*')):
-            file.unlink()
+        print("dir digits cropped already exits..")
+        return
+        #print("cleaning files..")
+        #for file in list(dir.glob('*')):
+        #    file.unlink()
 
     iteration = 0
     numberOfImages = len(listFiles)
@@ -46,7 +48,7 @@ def tryToOpenImage():
             #box – The crop rectangle, as a(left, upper, right, lower) - tuple.
             im = im.crop( (int(left),int(top), int(left)+int(width), int(top)+int(height)) )
             #im = im.resize(size) #thumbnail is better.. -> doesn't work!!!
-            #im.thumbnail(size)
+            #im.thumbnail(size) (never mind, it will do later)..
             fileNameImgForSave = fileNameImg.split(".")[0]+"_" + label + ".png"
             fileToSave = Path(data_dirDigits, fileNameImgForSave)
             im.save(fileToSave, "JPEG")
@@ -57,11 +59,7 @@ def tryToOpenImage():
 
     if(iteration>=numberOfImages):
         print("100% done")
-    #TODO:
-    #1 controllo immagini: Ci sono alcune label a 10 invece di 0..
-    #2 L'immagine 23814 ha labels sbagliate..
-    #3 Contianua ad accedere a mathwork/matlab per controllare
-    #4 Ridimensionare le immagini in maniera fissa? come si può fare?
+
 
 def read_input_train():
     with open("digitStruct_train.txt", "r") as f:
