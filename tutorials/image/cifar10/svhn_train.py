@@ -136,28 +136,27 @@ def elaborateInput():
   float_image = tf.image.resize_image_with_pad(float_image, height, width)
   img_4 = tf.expand_dims(float_image, 0)
 
-
-  #height = IMAGE_SIZE
-  #width = IMAGE_SIZE
-  # Set the shapes of tensors.
-  #float_image.set_shape([height, width, 3])
-
-  #Questo forse è meglio:
-  #[{'label': '3', 'top': '7', 'left': '52', 'width': '21', 'height': '46'}, {'label': '1', 'top': '10', 'left': '74', 'width': '15', 'height': '46'}]
-  #ffsetHeight = tf.placeholder(tf.int32)
-  #offsetWith = tf.placeholder(tf.int32)
- # targetHeight = tf.placeholder(tf.int32)
-  #targetWidth = tf.placeholder(tf.int32)
-
-  #Forse ci serve per il label
-  #pngname = key.eval().decode("utf-8").split("\\")[-1] -> operation?
-  #offsetWith = [digitsInfo[key][0]['left']] -> operation?
-  #devi cambiare questi in operazioni..
-  #stringkey = tf.cast(key,tf.string)
-  #splitPng = tf.strings.split(stringkey, "\\")
-  #pngName = tf.slice(splitPng, splitPng.getShape()[0]-1, 1)
-  #stringkey = tf.compat.as_text(key)
-  #stringkey = tf.convert_to_tensor(key, dtype=tf.string)
+  #try a easier way
+  splits = tf.string_split([key], "\\")
+  pngName = splits.values[-1] #"xxx_label.png"
+  label = tf.string_split( [tf.string_split([pngName], "\\.").values[0]] ,'_').values[1]
+  
+  '''
+  Se noi mettiamo l'immagine e il key (label) siamo a cavallo?..
+    # Ensure that the random shuffling has good mixing properties.
+    min_fraction_of_examples_in_queue = 0.4
+    min_queue_examples = int(NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN *
+                             min_fraction_of_examples_in_queue)
+    print('Filling queue with %d CIFAR images before starting to train. '
+          'This will take a few minutes.' % min_queue_examples)
+  
+    # Generate a batch of images and labels by building up a queue of examples.
+  
+  
+  return _generate_image_and_label_batch(float_image, read_input.label,
+                                         min_queue_examples, batch_size,
+                                         shuffle=True)
+  '''
 
   #keyexpand = tf.expand_dims(key,0)
   #splitPng = tf.strings.split(keyexpand, "\\")
@@ -167,20 +166,11 @@ def elaborateInput():
 
   img_opsummary = tf.summary.image("img", img_4)
 
-  #sess = tf.InteractiveSession()
-  #tf.global_variables_initializer().run()
-  #imgop_sess = sess.run(img_opsummary)
-  #train_writer = tf.summary.FileWriter(train_dir, sess.graph)
-  #train_writer.add_summary(imgop_sess)
   with tf.Session() as sess:
     coord = tf.train.Coordinator()
     threads = tf.train.start_queue_runners(coord=coord)
-   # print(sess.run(key))
-   # print(sess.run(splitPng))
-   # print(sess.run(png))
+    print(sess.run([key, pngName, label])) #sta eseguendo lo stesso grafo, key e label corrispondono in questa maniera (un solo run)
 
-
-    #print(sess.run(key))
     train_writer = tf.summary.FileWriter(train_dir, sess.graph)
     #for i in range(1,len(filenames)):
     for i in range(1, 20):
