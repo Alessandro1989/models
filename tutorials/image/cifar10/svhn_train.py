@@ -18,6 +18,7 @@ train_dir = '/tmp/svhn_train'
 data_dirDigits = '/tmp/svhn_dataDigits'
 DATA_URL = 'http://ufldl.stanford.edu/housenumbers/train.tar.gz'
 batch_size = 128 #number of images to process in a batch
+IMAGE_SIZE = 24
 
 def main(argv=None):
   maybe_download_and_extract()
@@ -118,7 +119,28 @@ def elaborateInput():
   key,value = reader.read(filename_queue, "read")
   img_u = tf.image.decode_jpeg(value, channels=3)
   img_f = tf.cast(img_u, tf.float32)
-  img_4 = tf.expand_dims(img_f, 0)
+  #img_4 = tf.expand_dims(img_f, 0)
+
+  #4-D Tensor of shape [batch, height, width, channels] ?? channels = 3 , e altezza e larghezze delle immagini???
+  #img_f = tf.image.random_flip_left_right(img_f) # must not used NA
+  img_f = tf.image.random_brightness(img_f, max_delta=60000)  #63
+  img_f = tf.image.random_contrast(img_f, lower=0.2, upper=1.8)
+
+  # Subtract off the mean and divide by the variance of the pixels.
+  float_image = tf.image.per_image_standardization(img_f)
+  height = IMAGE_SIZE
+  width = IMAGE_SIZE
+  # Set the shapes of tensors.
+  #float_image.set_shape([height, width, 3]) #doesnt work!!-> seems just for infos.. it's not our case
+
+  float_image = tf.image.resize_image_with_pad(float_image, height, width)
+  img_4 = tf.expand_dims(float_image, 0)
+
+
+  #height = IMAGE_SIZE
+  #width = IMAGE_SIZE
+  # Set the shapes of tensors.
+  #float_image.set_shape([height, width, 3])
 
   #Questo forse è meglio:
   #[{'label': '3', 'top': '7', 'left': '52', 'width': '21', 'height': '46'}, {'label': '1', 'top': '10', 'left': '74', 'width': '15', 'height': '46'}]
@@ -169,7 +191,7 @@ def elaborateInput():
       for i in range(1,15):
 
         #pngname = key.eval().decode("utf-8").split("\\")[-1]
-        imgop_sess = sess.run(img_opsummary, key) #need label together..
+        imgop_sess = sess.run(img_opsummary) #need label together..
         train_writer.add_summary(imgop_sess)
 
     coord.request_stop()
