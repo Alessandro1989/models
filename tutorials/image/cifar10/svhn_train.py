@@ -12,13 +12,22 @@ from tensorflow.python.summary import summary
 from tensorflow.python.training import queue_runner
 from tensorflow.python.ops import array_ops
 import svhn_readInputTrain
+import cifar10_input
+
 
 data_dir = '/tmp/svhn_data'
 train_dir = '/tmp/svhn_train'
 data_dirDigits = '/tmp/svhn_dataDigits'
 DATA_URL = 'http://ufldl.stanford.edu/housenumbers/train.tar.gz'
-batch_size = 128 #number of images to process in a batch
+#batch_size = 128 #number of images to process in a batch
+batch_size = 32 #number of images to process in a batch
 IMAGE_SIZE = 24
+
+# Global constants describing the CIFAR-10 data set.
+NUM_CLASSES = 10 #10 digits
+#Esempi in un epoca di train, 50 mila immagini per train e 10 mila per l'eval
+NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 1 #Numero esempi per epoca per fare il training
+#NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 10000 #Numero esempi per epoca per fare l'eval
 
 def main(argv=None):
   maybe_download_and_extract()
@@ -31,14 +40,30 @@ def main(argv=None):
 def train():
   with tf.Graph().as_default():
     global_step = tf.train.get_or_create_global_step() #"(un contatore per il training.."
-
-  #ci concentriamo sull'input e basta per adesso..
-    # Get images and labels for CIFAR-10.
-    # Force input pipeline to CPU:0 to avoid operations sometimes ending up on
-    # GPU and resulting in a slow down.
+    # Force input pipeline to CPU:0 to avoid operations sometimes ending up on GPU and resulting in a slow down.
     with tf.device('/cpu:0'):
       #images, labels = elaborateInput()
-      elaborateInput()
+      images, labels = elaborateInput()
+    print("here ok")
+
+    with tf.Session() as sess:
+      sess.run(tf.local_variables_initializer())
+      sess.run(tf.global_variables_initializer())
+      coord = tf.train.Coordinator()
+      threads = tf.train.start_queue_runners(coord=coord)
+
+      summary = tf.summary.image("batch", images)
+
+      for i in range(10):
+        summary_sess = sess.run(summary)  # need label together..
+        print(i, sess.run([images, labels])) #sembra Ok, ma HO DUBBI"!!
+        train_writer = tf.summary.FileWriter(train_dir, sess.graph)
+        train_writer.add_summary(summary_sess)
+      coord.request_stop()
+      coord.join(threads)
+
+
+    #da provare con la sessione, verificare ecc... (monotoraint training sess, in fondo)
 
     # Build a Graph that computes the logits predictions from the
     # inference model.
@@ -94,10 +119,7 @@ def elaborateInput():
   Returns:
     images: Images. 4D tensor of [batch_size, IMAGE_SIZE, IMAGE_SIZE, 3] size.
     labels: Labels. 1D tensor of [batch_size] size.
-
   """
-
-
 
   #crop digits if is necessary
   dir = Path(data_dirDigits)
@@ -140,22 +162,29 @@ def elaborateInput():
   splits = tf.string_split([key], "\\")
   pngName = splits.values[-1] #"xxx_label.png"
   label = tf.string_split( [tf.string_split([pngName], "\\.").values[0]] ,'_').values[1]
-  
+  labelNumber = tf.cast(label, tf.int32)
+  labelNumber = tf.expand_dims(labelNumber,0) #ok?
+
+  #with tf.Session() as sess:
+  #  print(labelNumber)
+  #  print(labelNumber.values[0]) #solo il tensor sparse ha il .values
+  #  print(tf.shape(labelNumber))
+
+  min_fraction_of_examples_in_queue = 0.4
+  min_queue_examples = int(NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN * min_fraction_of_examples_in_queue)
+
+  batch_size = 10
+  #adesso funziona, con il metodo chiamato no?, cosa cambia??!!!
+  images, labels = tf.train.shuffle_batch([float_image, label], batch_size, num_threads=16, capacity=3000 + 30,
+                                         min_after_dequeue=50)
+
+  #summary = tf.summary.image("batch", images)
+
+  return images, tf.reshape(labels, [batch_size])
   '''
-  Se noi mettiamo l'immagine e il key (label) siamo a cavallo?..
-    # Ensure that the random shuffling has good mixing properties.
-    min_fraction_of_examples_in_queue = 0.4
-    min_queue_examples = int(NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN *
-                             min_fraction_of_examples_in_queue)
-    print('Filling queue with %d CIFAR images before starting to train. '
-          'This will take a few minutes.' % min_queue_examples)
-  
-    # Generate a batch of images and labels by building up a queue of examples.
-  
-  
-  return _generate_image_and_label_batch(float_image, read_input.label,
-                                         min_queue_examples, batch_size,
-                                         shuffle=True)
+  return cifar10_input._generate_image_and_label_batch(float_image, labelNumber,
+                                  min_queue_examples, batch_size,
+                                  shuffle=True)
   '''
 
   #keyexpand = tf.expand_dims(key,0)
@@ -189,6 +218,37 @@ def elaborateInput():
 
   #https: // stackoverflow.com / questions / 34696845 / how - to - see - multiple - images - through - tf - image - summary
 
+
+def _generate_image_and_label_batch(image, label, min_queue_examples,
+                                    batch_size, shuffle):
+  """Construct a queued batch of images and labels.
+
+  Args:
+    image: 3-D Tensor of [height, width, 3] of type.float32.
+    label: 1-D Tensor of type.int32
+    min_queue_examples: int32, minimum number of samples to retain
+      in the queue that provides of batches of examples.
+    batch_size: Number of images per batch.
+    shuffle: boolean indicating whether to use a shuffling queue.
+
+  Returns:
+    images: Images. 4D tensor of [batch_size, height, width, 3] size.
+    labels: Labels. 1D tensor of [batch_size] size.
+  """
+  # Create a queue that shuffles the examples, and then
+  # read 'batch_size' images + labels from the example queue.
+  num_preprocess_threads = 16
+  images, label_batch = tf.train.shuffle_batch(
+      [image, label],
+      batch_size=batch_size,
+      num_threads=num_preprocess_threads,
+      capacity=min_queue_examples + 3 * batch_size,
+      min_after_dequeue=min_queue_examples)
+
+  # Display the training images in the visualizer.
+  summary = tf.summary.image('images', images)
+
+  return images, tf.reshape(label_batch, [batch_size]), summary
 
 
 
