@@ -5,7 +5,66 @@ from pathlib import Path, PureWindowsPath
 
 def main():
     readInfoAndCropDigits()
+
+
+    #da cambiare e refactoring
+    readInfoAndCropDigitsEval()
+
     #read_input_train()
+
+#TODO: refactoring
+def readInfoAndCropDigitsEval():
+    data_dir = 'C:/Users/alessandro.novi/Desktop/ale/uni/house numbers/primo formato/test.tar/test'
+    data_dirDigits = '/tmp/svhn_dataDigitsEval'
+    pathDataDir = Path(data_dir)
+    listFiles = list(pathDataDir.glob('*.png'))
+    size = (128, 128)
+
+
+    digitsInfo = read_digitStruct("digitStruct_eval.txt")
+    # qui ci occupiamo di tagliare le cifre e fare il dataset
+
+    dir = Path(data_dirDigits)
+    if(not dir.exists()):
+        dir.mkdir()
+    else:
+        print("dir digits cropped already exits..")
+        return
+        #print("cleaning files..")
+        #for file in list(dir.glob('*')):
+        #    file.unlink()
+
+    iteration = 0
+    numberOfImages = len(listFiles)
+    apercentage = int(numberOfImages/100)
+    print("cropping images:")
+    for file in listFiles:
+        #file, ext = os.path.splitext(infile)
+        fileNamePath = str(file.absolute())
+        fileNameImg = fileNamePath.split("\\")[-1]
+        infoForDigitsImage = digitsInfo[fileNameImg]
+
+        for singleInfoDigit in infoForDigitsImage:
+            im = Image.open(fileNamePath)
+            top = singleInfoDigit['top']
+            left = singleInfoDigit['left']
+            height = singleInfoDigit['height']
+            width = singleInfoDigit['width']
+            label = singleInfoDigit['label']
+            #box – The crop rectangle, as a(left, upper, right, lower) - tuple.
+            im = im.crop( (int(left),int(top), int(left)+int(width), int(top)+int(height)) )
+            #im = im.resize(size) #thumbnail is better.. -> doesn't work!!!
+            #im.thumbnail(size) (never mind, it will do later)..
+            fileNameImgForSave = fileNameImg.split(".")[0]+"_" + label + ".png"
+            fileToSave = Path(data_dirDigits, fileNameImgForSave)
+            im.save(fileToSave, "JPEG")
+
+        iteration +=1
+        if(iteration % apercentage == 0):
+            print(str(int((iteration/numberOfImages)*100)) + "%", end='...', flush=True)
+
+    if(iteration>=numberOfImages):
+        print("100% done")
 
 def readInfoAndCropDigits():
     data_dir = '/tmp/svhn_data'
@@ -15,7 +74,7 @@ def readInfoAndCropDigits():
     size = (128, 128)
 
 
-    digitsInfo = read_input_train()
+    digitsInfo = read_digitStruct("digitStruct_train.txt")
     # qui ci occupiamo di tagliare le cifre e fare il dataset
 
     dir = Path(data_dirDigits)
@@ -61,8 +120,8 @@ def readInfoAndCropDigits():
         print("100% done")
 
 
-def read_input_train():
-    with open("digitStruct_train.txt", "r") as f:
+def read_digitStruct(nomefile):
+    with open(nomefile, "r") as f:
         digitDict = {}
 
         for line in f:
