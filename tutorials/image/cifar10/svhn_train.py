@@ -5,13 +5,12 @@ from six.moves import urllib
 import tarfile
 import datetime
 from pathlib import Path, PureWindowsPath
-import cifar10
 from tensorflow.python.framework import ops
 from tensorflow.python.framework import dtypes
 from tensorflow.python.summary import summary
 from tensorflow.python.training import queue_runner
 from tensorflow.python.ops import array_ops
-import svhn_readInputTrain
+import svhn_readInput
 import cifar10_input
 from datetime import datetime
 import time
@@ -31,7 +30,9 @@ tf.app.flags.DEFINE_integer('log_frequency', 10,
 
 data_dir = '/tmp/svhn_data'
 train_dir = '/tmp/svhn_train'
-data_dirDigits = '/tmp/svhn_dataDigits'
+data_dirDigitsTrain = '/tmp/svhn_dataDigits'
+data_dirDigitsEval = '/tmp/svhn_dataDigitsEval'
+
 DATA_URL = 'http://ufldl.stanford.edu/housenumbers/train.tar.gz'
 batch_size = 64 #128 number of images to process in a batch
 IMAGE_SIZE = 24
@@ -57,8 +58,8 @@ def train():
     # Force input pipeline to CPU:0 to avoid operations sometimes ending up on GPU and resulting in a slow down.
     with tf.device('/cpu:0'):
       #images, labels = elaborateInput()
-      images, labels = elaborateInput()
-
+      images, labels = svhn_readInput.elaborateInput()
+    """
     with tf.Session() as sess:
       sess.run(tf.local_variables_initializer())
       sess.run(tf.global_variables_initializer())
@@ -73,7 +74,7 @@ def train():
         train_writer.add_summary(summary_sess)
       coord.request_stop()
       coord.join(threads)
-
+    """
     #PROVIAMO....:
 
     # Build a Graph that computes the logits predictions from the
@@ -122,128 +123,6 @@ def train():
             log_device_placement=FLAGS.log_device_placement)) as mon_sess:
       while not mon_sess.should_stop():
         mon_sess.run(train_op)
-
-
-def elaborateInput():
-  """Construct distorted input for SVHN training using the Reader ops.
-
-  Returns:
-    images: Images. 4D tensor of [batch_size, IMAGE_SIZE, IMAGE_SIZE, 3] size.
-    labels: Labels. 1D tensor of [batch_size] size.
-  """
-
-  #crop digits if is necessary
-  dir = Path(data_dirDigits)
-  if (not dir.exists()):
-    svhn_readInputTrain.readInfoAndCropDigits()
-
-  #pathDataDir = Path(data_dir, 'train')
-  pathDataDir = Path(data_dirDigits)
-  filenames = list(pathDataDir.glob('*.png'))
-  # converte in a list of string paths
-  filenames = list(map(lambda x: str(x.absolute()), filenames))
-
-
-  # Create a queue that produces the filenames to read
-  # (he converts the strings in tensors) and add them to the fifoqueue
-  filename_queue = tf.train.string_input_producer(filenames)
-  reader = tf.WholeFileReader("reader")
-  #restituisce una stringa che rappresenta il contenuto, e una stringa per il filename
-  key,value = reader.read(filename_queue, "read")
-  img_u = tf.image.decode_jpeg(value, channels=3)
-  img_f = tf.cast(img_u, tf.float32)
-  #img_4 = tf.expand_dims(img_f, 0)
-
-  #4-D Tensor of shape [batch, height, width, channels] ?? channels = 3 , e altezza e larghezze delle immagini???
-  #img_f = tf.image.random_flip_left_right(img_f) # must not used NA
-  img_f = tf.image.random_brightness(img_f, max_delta=60000)  #63
-  img_f = tf.image.random_contrast(img_f, lower=0.2, upper=1.8)
-
-  # Subtract off the mean and divide by the variance of the pixels.
-  float_image = tf.image.per_image_standardization(img_f)
-  height = IMAGE_SIZE
-  width = IMAGE_SIZE
-  # Set the shapes of tensors.
-  #float_image.set_shape([height, width, 3]) #doesnt work!!-> seems just for infos.. it's not our case
-
-  float_image = tf.image.resize_image_with_pad(float_image, height, width)
-  img_4 = tf.expand_dims(float_image, 0)
-
-  #try a easier way
-  splits = tf.string_split([key], "\\")
-  pngName = splits.values[-1] #"xxx_label.png"
-  label = tf.string_split( [tf.string_split([pngName], "\\.").values[0]] ,'_').values[1]
-  labelNumber = tf.strings.to_number(label, tf.int32)
-
-  min_fraction_of_examples_in_queue = 0.4
-  min_queue_examples = int(NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN * min_fraction_of_examples_in_queue)
-
-  return generate_image_and_label_batch(float_image, labelNumber,
-                                                       min_queue_examples, batch_size,
-                                                       shuffle=True)
-  # -------------------------------------------------------------------------#-------------------------------------------------------------------------#-------------------------------------------------------------------------#-------------------------------------------------------------------------
-  # -------------------------------------------------------------------------#---OTHER STUFF..----------------------------------------------------------------------#-------------------------------------------------------------------------
-
-  #keyexpand = tf.expand_dims(key,0)
-  #splitPng = tf.strings.split(keyexpand, "\\")
-  #png = splitPng[-1]
-  #to fix : 4 -> with dimshape()-1
-  #png = tf.sparse_slice(splitPng,[0,4],[1,1])
-
-  img_opsummary = tf.summary.image("img", img_4)
-
-  with tf.Session() as sess:
-    coord = tf.train.Coordinator()
-    threads = tf.train.start_queue_runners(coord=coord)
-    print(sess.run([key, pngName, label])) #sta eseguendo lo stesso grafo, key e label corrispondono in questa maniera (un solo run)
-
-    train_writer = tf.summary.FileWriter(train_dir, sess.graph)
-    #for i in range(1,len(filenames)):
-    for i in range(1, 20):
-      #perche solo 10 immagini per "slot"? (facendo così va un po' meglio ma mica tatno però!)
-      print(i)
-      #print(key.eval())
-      img_opsummary = tf.summary.image(str(i), img_4, 1000)
-      for i in range(1,15):
-
-        #pngname = key.eval().decode("utf-8").split("\\")[-1]
-        imgop_sess = sess.run(img_opsummary) #need label together..
-        train_writer.add_summary(imgop_sess)
-
-    coord.request_stop()
-    coord.join(threads)
-
-def generate_image_and_label_batch(image, label, min_queue_examples,
-                                    batch_size, shuffle):
-  """Construct a queued batch of images and labels.
-
-  Args:
-    image: 3-D Tensor of [height, width, 3] of type.float32.
-    label: 1-D Tensor of type.int32
-    min_queue_examples: int32, minimum number of samples to retain
-      in the queue that provides of batches of examples.
-    batch_size: Number of images per batch.
-    shuffle: boolean indicating whether to use a shuffling queue.
-
-  Returns:
-    images: Images. 4D tensor of [batch_size, height, width, 3] size.
-    labels: Labels. 1D tensor of [batch_size] size.
-  """
-  # Create a queue that shuffles the examples, and then
-  # read 'batch_size' images + labels from the example queue.
-  num_preprocess_threads = 16
-  images, label_batch = tf.train.shuffle_batch(
-      [image, label],
-      batch_size=batch_size,
-      num_threads=num_preprocess_threads,
-      capacity=min_queue_examples + 3 * batch_size,
-      min_after_dequeue=min_queue_examples)
-
-  # Display the training images in the visualizer.
-  tf.summary.image('images', images)
-
-  return images, tf.reshape(label_batch, [batch_size])
-
 
 
 def maybe_download_and_extract():

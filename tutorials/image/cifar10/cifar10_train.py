@@ -67,6 +67,20 @@ def train():
     with tf.device('/cpu:0'):
       images, labels = cifar10.distorted_inputs()
 
+
+    '''#BEGIN im trying
+    with tf.Session() as sess:
+        coord = tf.train.Coordinator()
+        threads = tf.train.start_queue_runners(coord=coord)
+        #non fa niente se non li mette in tensor board, stampa le immagini per cui li ha caricate...
+        for i in range(10):
+            print(i, sess.run(images))
+        coord.request_stop()
+        coord.join(threads)
+    return
+    #END trying
+'''
+
     # Build a Graph that computes the logits predictions from the
     # inference model.
     logits = cifar10.inference(images)
