@@ -1,15 +1,14 @@
+from __future__ import print_function
 from PIL import Image
 import os
 import sys
 from pathlib import Path, PureWindowsPath
 import tensorflow as tf
-import os
-import sys
 from six.moves import urllib
 import tarfile
 import datetime
 from pathlib import Path, PureWindowsPath
-
+from tensorflow.python.framework import ops
 
 import tensorflow as tf
 
@@ -91,14 +90,20 @@ def elaborateInput(eval=False):
   # Set the shapes of tensors.
   #float_image.set_shape([height, width, 3]) #doesnt work!!-> seems just for infos.. it's not our case
 
-  float_image = tf.image.resize_image_with_pad(float_image, height, width)
-  img_4 = tf.expand_dims(float_image, 0)
+
 
   #try a easier way
   splits = tf.string_split([key], "\\")
   pngName = splits.values[-1] #"xxx_label.png"
+
+  #op_printlabel = tf.Print(pngName, [pngName], "tensorLabel")
+
   label = tf.string_split( [tf.string_split([pngName], "\\.").values[0]] ,'_').values[1]
+
+  #with tf.control_dependencies([op_printlabel]):
   labelNumber = tf.strings.to_number(label, tf.int32)
+  float_image = tf.image.resize_image_with_pad(float_image, height, width)
+  #img_4 = tf.expand_dims(float_image, 0)
 
   min_fraction_of_examples_in_queue = 0.4
   min_queue_examples = int(NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN * min_fraction_of_examples_in_queue)

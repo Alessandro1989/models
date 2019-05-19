@@ -59,23 +59,6 @@ def train():
     with tf.device('/cpu:0'):
       #images, labels = elaborateInput()
       images, labels = svhn_readInput.elaborateInput()
-    """
-    with tf.Session() as sess:
-      sess.run(tf.local_variables_initializer())
-      sess.run(tf.global_variables_initializer())
-      coord = tf.train.Coordinator()
-      threads = tf.train.start_queue_runners(coord=coord)
-      summary = tf.summary.image("batch", images)
-
-      for i in range(10):
-        summary_sess = sess.run(summary)  # need label together..
-        print(i, sess.run([images, labels])) #sembra Ok, ma HO DUBBI"!!
-        train_writer = tf.summary.FileWriter(train_dir, sess.graph)
-        train_writer.add_summary(summary_sess)
-      coord.request_stop()
-      coord.join(threads)
-    """
-    #PROVIAMO....:
 
     # Build a Graph that computes the logits predictions from the
     # inference model.
@@ -122,7 +105,12 @@ def train():
         config=tf.ConfigProto(
             log_device_placement=FLAGS.log_device_placement)) as mon_sess:
       while not mon_sess.should_stop():
-        mon_sess.run(train_op)
+        #mon_sess.run(train_op) (like sess.run, ci interessano le immagini che sta elaborando per capire dove sbaglia
+        try:
+          mon_sess.run(train_op)
+        except: #resize exception.. (there is some images give problems..)
+          print('error')
+          input("write something to continue: ")
 
 
 def maybe_download_and_extract():
