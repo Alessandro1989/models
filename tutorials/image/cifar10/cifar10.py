@@ -63,10 +63,14 @@ NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = cifar10_input.NUM_EXAMPLES_PER_EPOCH_FOR_EVAL
 
 
 # Constants describing the training process.
+#todo: indaga..
 MOVING_AVERAGE_DECAY = 0.9999     # The decay to use for the moving average.
-NUM_EPOCHS_PER_DECAY = 350.0      # Epochs after which learning rate decays.
-LEARNING_RATE_DECAY_FACTOR = 0.1  # Learning rate decay factor.
-INITIAL_LEARNING_RATE = 0.1       # Initial learning rate.
+
+#Learning rate:
+NUM_EPOCHS_PER_DECAY = 105.0      # Epochs after which learning rate decays (350).
+LEARNING_RATE_DECAY_FACTOR = 0.1  # Learning rate decay factor. (before 0.1)
+INITIAL_LEARNING_RATE = 0.12      # Initial learning rate. (before was 0.1)
+STAIRCASE = False #se è a true decrementa a intervalli discreti... (before was true)
 
 # If a model is trained with multiple GPUs, prefix all Op names with tower_name
 # to differentiate the operations. Note that this prefix is removed from the
@@ -344,16 +348,20 @@ def train(total_loss, global_step):
                                   global_step,
                                   decay_steps,
                                   LEARNING_RATE_DECAY_FACTOR,
-                                  staircase=True)
+                                  STAIRCASE) #before was true
+  #op_printlabel = tf.Print(pngName, [pngName], "tensorLabel")
+  op_printlearningrate = tf.Print(lr, [lr,global_step,decay_steps], "learning rate: ; global_step: ; decay_steps: ")
+
   tf.summary.scalar('learning_rate', lr)
 
   # Generate moving averages of all losses and associated summaries.
   loss_averages_op = _add_loss_summaries(total_loss)
 
   # Compute gradients.
-  with tf.control_dependencies([loss_averages_op]):
-    opt = tf.train.GradientDescentOptimizer(lr)
-    grads = opt.compute_gradients(total_loss)
+  with tf.control_dependencies([op_printlearningrate]):
+      with tf.control_dependencies([loss_averages_op]):
+        opt = tf.train.GradientDescentOptimizer(lr)
+        grads = opt.compute_gradients(total_loss)
 
   # Apply gradients.
   apply_gradient_op = opt.apply_gradients(grads, global_step=global_step)
