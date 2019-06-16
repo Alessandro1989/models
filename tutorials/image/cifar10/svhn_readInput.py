@@ -9,6 +9,13 @@ import tarfile
 import datetime
 from pathlib import Path, PureWindowsPath
 from tensorflow.python.framework import ops
+import random
+from tensorflow.python.ops import math_ops
+from tensorflow.python.framework import ops
+from tensorflow.python.ops import array_ops
+from tensorflow.python.framework import dtypes
+
+import math
 
 import tensorflow as tf
 
@@ -19,15 +26,15 @@ data_dirDigitsTrain = '/tmp/svhn_dataDigits'
 data_dirDigitsEval = '/tmp/svhn_dataDigitsEval'
 
 DATA_URL = 'http://ufldl.stanford.edu/housenumbers/train.tar.gz'
-batch_size = 64 #128 number of images to process in a batch
 IMAGE_SIZE = 24
 
 # Global constants describing the CIFAR-10 data set.
+BATCH_SIZE = 128
 NUM_CLASSES = 10 #10 digits
 #Esempi in un epoca di train, 50 mila immagini per train e 10 mila per l'eval
 #NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 67814 #Numero esempi per epoca per fare il training
-NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 20000 #4000 Solo Per adesso, per questioni di VELOCITA' -> Numero esempi per epoca per fare il training
-NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 26032  #Numero esempi per epoca per fare l'eval
+NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 67000
+NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 24000  #Numero esempi per epoca per fare l'eval
 
 def main():
     print("main readinput")
@@ -78,8 +85,23 @@ def elaborateInput(eval=False):
   #4-D Tensor of shape [batch, height, width, channels] ?? channels = 3 , e altezza e larghezze delle immagini???
   #img_f = tf.image.random_flip_left_right(img_f) # must not used NA
   if not eval:
-    img_f = tf.image.random_brightness(img_f, max_delta=60000)  #63
+    degrees = 15
+    rateForRadiants = math.pi / 180
+
+
+    random_angles = tf.random_uniform([1], minval  = -(degrees * rateForRadiants), maxval=(degrees * rateForRadiants))
+
+    # not work: img_f = tf.contrib.image.rotate(img_f, tf.random_uniform([1],(- (degrees * rateForRadiants), (degrees * rateForRadiants))))
+    #output = transform(images, angles_to_projective_transforms(angles, image_height, image_width),interpolation=interpolation)
+
+    image_height = math_ops.cast(array_ops.shape(img_f)[1], dtypes.float32)[None]
+    image_width = math_ops.cast(array_ops.shape(img_f)[2], dtypes.float32)[None]
+    img_f = tf.contrib.image.transform(img_f,  tf.contrib.image.angles_to_projective_transforms(random_angles,
+    image_height, image_width))
+
+    img_f = tf.image.random_brightness(img_f, max_delta=63)  #63
     img_f = tf.image.random_contrast(img_f, lower=0.2, upper=1.8)
+
     # Subtract off the mean and divide by the variance of the pixels.
     float_image = tf.image.per_image_standardization(img_f)
   else:
@@ -105,11 +127,20 @@ def elaborateInput(eval=False):
   float_image = tf.image.resize_image_with_pad(float_image, height, width)
   #img_4 = tf.expand_dims(float_image, 0)
 
+  # Ensure that the random shuffling has good mixing properties.
   min_fraction_of_examples_in_queue = 0.4
-  min_queue_examples = int(NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN * min_fraction_of_examples_in_queue)
+
+  if not eval:
+      numExample = NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN
+  else:
+      numExample = NUM_EXAMPLES_PER_EPOCH_FOR_EVAL
+
+  min_queue_examples = int(numExample * min_fraction_of_examples_in_queue)
+  print ('Filling queue with %d SVHN images before starting to train. '
+           'This will take a few minutes.' % min_queue_examples)
 
   return generate_image_and_label_batch(float_image, labelNumber,
-                                                       min_queue_examples, batch_size,
+                                                       min_queue_examples, BATCH_SIZE ,
                                                        shuffle=True)
 
 
