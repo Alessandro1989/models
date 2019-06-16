@@ -34,15 +34,15 @@ data_dirDigitsTrain = '/tmp/svhn_dataDigits'
 data_dirDigitsEval = '/tmp/svhn_dataDigitsEval'
 
 DATA_URL = 'http://ufldl.stanford.edu/housenumbers/train.tar.gz'
-batch_size = 64 #128 number of images to process in a batch
 IMAGE_SIZE = 24
 
 # Global constants describing the CIFAR-10 data set.
 NUM_CLASSES = 10 #10 digits
 #Esempi in un epoca di train, 50 mila immagini per train e 10 mila per l'eval
 #NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 67814 #Numero esempi per epoca per fare il training
-NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 4000 #Solo Per adesso, per questioni di VELOCITA' -> Numero esempi per epoca per fare il training
-NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 26032  #Numero esempi per epoca per fare l'eval
+#NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 67800
+#Solo Per adesso, per questioni di VELOCITA' -> Numero esempi per epoca per fare il training
+#NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 24000  #Numero esempi per epoca per fare l'eval
 
 def main(argv=None):
   maybe_download_and_extract()
@@ -106,11 +106,11 @@ def train():
             log_device_placement=FLAGS.log_device_placement)) as mon_sess:
       while not mon_sess.should_stop():
         #mon_sess.run(train_op) (like sess.run, ci interessano le immagini che sta elaborando per capire dove sbaglia
-        try:
+      #  try:
           mon_sess.run(train_op)
-        except: #resize exception.. (there is some images give problems..)
-          print('error')
-          input("write something to continue: ")
+      #  except: #resize exception.. (there is some images give problems..)
+      #    print('error')
+       #   input("write something to continue: ")
 
 
 def maybe_download_and_extract():
