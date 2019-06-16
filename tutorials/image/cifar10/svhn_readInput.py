@@ -85,6 +85,9 @@ def elaborateInput(eval=False):
   #4-D Tensor of shape [batch, height, width, channels] ?? channels = 3 , e altezza e larghezze delle immagini???
   #img_f = tf.image.random_flip_left_right(img_f) # must not used NA
   if not eval:
+
+    """
+    rotation:
     degrees = 15
     rateForRadiants = math.pi / 180
 
@@ -98,7 +101,7 @@ def elaborateInput(eval=False):
     image_width = math_ops.cast(array_ops.shape(img_f)[2], dtypes.float32)[None]
     img_f = tf.contrib.image.transform(img_f,  tf.contrib.image.angles_to_projective_transforms(random_angles,
     image_height, image_width))
-
+    """
     img_f = tf.image.random_brightness(img_f, max_delta=63)  #63
     img_f = tf.image.random_contrast(img_f, lower=0.2, upper=1.8)
 
