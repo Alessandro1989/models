@@ -34,7 +34,8 @@ NUM_CLASSES = 10 #10 digits
 #Esempi in un epoca di train, 50 mila immagini per train e 10 mila per l'eval
 #NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 67814 #Numero esempi per epoca per fare il training
 NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 67000
-NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 24000  #Numero esempi per epoca per fare l'eval
+#NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 24000  #Numero esempi per epoca per fare l'eval
+NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 6000  #Numero esempi per epoca per fare l'eval
 
 def main():
     print("main readinput")
