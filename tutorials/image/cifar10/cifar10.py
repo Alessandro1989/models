@@ -133,12 +133,22 @@ def _variable_with_weight_decay(name, shape, stddev, wd):
     Variable Tensor
   """
   dtype = tf.float16 if FLAGS.use_fp16 else tf.float32
+
+  #try l1 regulazire instead of l2
+  #l1_regularizer = tf.contrib.layers.l1_regularizer(
+  #    scale=0.005, scope=None
+  #)
   var = _variable_on_cpu(
       name,
       shape,
       tf.truncated_normal_initializer(stddev=stddev, dtype=dtype))
+
+  #list = [element.item() for element in var.flatten()]
+
   if wd is not None:
     weight_decay = tf.multiply(tf.nn.l2_loss(var), wd, name='weight_loss')
+    #regularization_penalty = tf.contrib.layers.apply_regularization(l1_regularizer, var)
+    #weight_decay = tf.multiply(regularization_penalty, wd, name='weight_loss')
     tf.add_to_collection('losses', weight_decay)
   return var
 
@@ -241,21 +251,27 @@ def inference(images):
   pool2 = tf.nn.max_pool(norm2, ksize=[1, 3, 3, 1],
                          strides=[1, 2, 2, 1], padding='SAME', name='pool2')
 
+
+  lamdaRegularization = 0.01
   # local3
   with tf.variable_scope('local3') as scope:
     # Move everything into depth so we can perform a single matrix multiply.
     reshape = tf.reshape(pool2, [images.get_shape().as_list()[0], -1])
     dim = reshape.get_shape()[1].value
+    #weights = _variable_with_weight_decay('weights', shape=[dim, 384],
+    #                                      stddev=0.04, wd=0.004)
     weights = _variable_with_weight_decay('weights', shape=[dim, 384],
-                                          stddev=0.04, wd=0.004)
+                                          stddev=0.04, wd=lamdaRegularization)
     biases = _variable_on_cpu('biases', [384], tf.constant_initializer(0.1))
     local3 = tf.nn.relu(tf.matmul(reshape, weights) + biases, name=scope.name)
     _activation_summary(local3)
 
   # local4
   with tf.variable_scope('local4') as scope:
+    #weights = _variable_with_weight_decay('weights', shape=[384, 192],
+    #                                      stddev=0.04, wd=0.004)
     weights = _variable_with_weight_decay('weights', shape=[384, 192],
-                                          stddev=0.04, wd=0.004)
+                                          stddev=0.04, wd=lamdaRegularization)
     biases = _variable_on_cpu('biases', [192], tf.constant_initializer(0.1))
     local4 = tf.nn.relu(tf.matmul(local3, weights) + biases, name=scope.name)
     _activation_summary(local4)
