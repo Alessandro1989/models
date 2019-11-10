@@ -69,7 +69,7 @@ MOVING_AVERAGE_DECAY = 0.9999     # The decay to use for the moving average.
 #Learning rate:
 NUM_EPOCHS_PER_DECAY = 105.0      # Epochs after which learning rate decays (350).
 LEARNING_RATE_DECAY_FACTOR = 0.1  # Learning rate decay factor. (before 0.1)
-INITIAL_LEARNING_RATE = 0.12      # Initial learning rate. (before was 0.1)
+INITIAL_LEARNING_RATE = 0.12  #0.12    # Initial learning rate. (before was 0.1)
 STAIRCASE = False #se è a true decrementa a intervalli discreti... (before was true)
 
 # If a model is trained with multiple GPUs, prefix all Op names with tower_name
@@ -229,12 +229,12 @@ def inference(images):
 
   # pool1
   #pool1 = tf.nn.max_pool(conv1, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1],
-  pool1 = tf.nn.max_pool(conv1, ksize=[1, 2, 2, 1], strides=[1, 1, 1, 1],
-                         padding='SAME', name='pool1')
+   #                      padding='SAME', name='pool1')
   # norm1
-  norm1 = tf.nn.lrn(pool1, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75,
-                    name='norm1')
+  pool1 = tf.nn.max_pool(conv1, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1],padding='SAME', name='pool1')
 
+  norm1 = tf.nn.lrn(pool1, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75, name='norm1')
+  '''
   # conv2
   with tf.variable_scope('conv2') as scope:
     kernel = _variable_with_weight_decay('weights',
@@ -254,15 +254,40 @@ def inference(images):
                     name='norm2')
   # pool2
   #pool2 = tf.nn.max_pool(norm2, ksize=[1, 3, 3, 1],strides=[1, 2, 2, 1], padding='SAME', name='pool2')
-  pool2 = tf.nn.max_pool(conv1, ksize=[1, 2, 2, 1], strides=[1, 1, 1, 1], padding='SAME', name='pool2')
+  pool2 = tf.nn.avg_pool(norm2, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding='SAME', name='pool2')
+  #pool2 = tf.nn.max_pool(norm2, ksize=[1, 2, 2, 1], strides=[1, 1, 1, 1], padding='SAME', name='pool2')
 
 
+  ############################prova conv 3##############################
+  # conv3
+  
+  with tf.variable_scope('conv3') as scope:
+      kernel = _variable_with_weight_decay('weights',
+                                           # shape=[5, 5, 64, 64],
+                                           shape=[6, 6, 90, 90],
+                                           stddev=5e-2,
+                                           wd=None)
+      conv = tf.nn.conv2d(norm1, kernel, [1, 1, 1, 1], padding='SAME')
+      # prima era 64
+      biases = _variable_on_cpu('biases', [90], tf.constant_initializer(0.1))
+      pre_activation = tf.nn.bias_add(conv, biases)
+      conv3 = tf.nn.relu(pre_activation, name=scope.name)
+      _activation_summary(conv3)
 
+  # norm3
+  norm3 = tf.nn.lrn(conv3, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75,
+                    name='norm2')
+  # pool3
+  # pool3 = tf.nn.max_pool(norm2, ksize=[1, 3, 3, 1],strides=[1, 2, 2, 1], padding='SAME', name='pool2')
+  pool3 = tf.nn.max_pool(norm3, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding='SAME', name='pool2')
+
+  ############################end##############################
+  '''
   lamdaRegularization = 0.01
   # local3
   with tf.variable_scope('local3') as scope:
     # Move everything into depth so we can perform a single matrix multiply.
-    reshape = tf.reshape(pool2, [images.get_shape().as_list()[0], -1])
+    reshape = tf.reshape(norm1, [images.get_shape().as_list()[0], -1])
     dim = reshape.get_shape()[1].value
     #weights = _variable_with_weight_decay('weights', shape=[dim, 384],
     #                                      stddev=0.04, wd=0.004)
