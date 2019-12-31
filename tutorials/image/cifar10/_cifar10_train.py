@@ -16,8 +16,8 @@
 """A binary to train CIFAR-10 using a single GPU.
 
 Accuracy:
-cifar10_train.py achieves ~86% accuracy after 100K steps (256 epochs of
-data) as judged by cifar10_eval.py.
+_cifar10_train.py achieves ~86% accuracy after 100K steps (256 epochs of
+data) as judged by _cifar10_eval.py.
 
 Speed: With batch_size 128.
 
@@ -41,7 +41,7 @@ import time
 
 import tensorflow as tf
 
-import cifar10
+import svhn
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -65,18 +65,18 @@ def train():
     # Force input pipeline to CPU:0 to avoid operations sometimes ending up on
     # GPU and resulting in a slow down.
     with tf.device('/cpu:0'):
-      images, labels = cifar10.distorted_inputs()
+      images, labels = svhn.distorted_inputs()
 
     # Build a Graph that computes the logits predictions from the
     # inference model.
-    logits = cifar10.inference(images)
+    logits = svhn.inference(images)
 
     # Calculate loss.
-    loss = cifar10.loss(logits, labels)
+    loss = svhn.loss(logits, labels)
 
     # Build a Graph that trains the model with one batch of examples and
     # updates the model parameters.
-    train_op = cifar10.train(loss, global_step)
+    train_op = svhn.train(loss, global_step)
 
     class _LoggerHook(tf.train.SessionRunHook):
       """Logs loss and runtime."""
@@ -116,7 +116,7 @@ def train():
 
 
 def main(argv=None):  # pylint: disable=unused-argument
-  cifar10.maybe_download_and_extract()
+  svhn.maybe_download_and_extract()
   if tf.gfile.Exists(FLAGS.train_dir):
     tf.gfile.DeleteRecursively(FLAGS.train_dir)
   tf.gfile.MakeDirs(FLAGS.train_dir)

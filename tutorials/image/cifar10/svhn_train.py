@@ -11,13 +11,13 @@ from tensorflow.python.summary import summary
 from tensorflow.python.training import queue_runner
 from tensorflow.python.ops import array_ops
 import svhn_readInput
-import cifar10_input
+import _cifar10_input
 from datetime import datetime
 import time
 
 import tensorflow as tf
 
-import cifar10
+import svhn
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -34,15 +34,11 @@ data_dirDigitsTrain = '/tmp/svhn_dataDigits'
 data_dirDigitsEval = '/tmp/svhn_dataDigitsEval'
 
 DATA_URL = 'http://ufldl.stanford.edu/housenumbers/train.tar.gz'
-IMAGE_SIZE = 24
+IMAGE_SIZE = svhn_readInput.IMAGE_SIZE
 
 # Global constants describing the CIFAR-10 data set.
-NUM_CLASSES = 10 #10 digits
-#Esempi in un epoca di train, 50 mila immagini per train e 10 mila per l'eval
-#NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 67814 #Numero esempi per epoca per fare il training
-#NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 67800
-#Solo Per adesso, per questioni di VELOCITA' -> Numero esempi per epoca per fare il training
-#NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 24000  #Numero esempi per epoca per fare l'eval
+NUM_CLASSES = svhn_readInput.NUM_CLASSES
+BATCH_SIZE = svhn_readInput.BATCH_SIZE
 
 def main(argv=None):
   maybe_download_and_extract()
@@ -62,14 +58,14 @@ def train():
 
     # Build a Graph that computes the logits predictions from the
     # inference model.
-    logits = cifar10.inference(images)
+    logits = svhn.inference(images)
 
     #Calculate loss.
-    loss = cifar10.loss(logits, labels) #Problems with cast con labels in int64
+    loss = svhn.loss(logits, labels) #Problems with cast con labels in int64
 
     #Build a Graph that trains the model with one batch of examples and
     #updates the model parameters.
-    train_op = cifar10.train(loss, global_step)
+    train_op = svhn.train(loss, global_step)
 
     class _LoggerHook(tf.train.SessionRunHook):
       """Logs loss and runtime."""
@@ -89,7 +85,7 @@ def train():
           self._start_time = current_time
 
           loss_value = run_values.results
-          examples_per_sec = FLAGS.log_frequency * FLAGS.batch_size / duration
+          examples_per_sec = FLAGS.log_frequency * BATCH_SIZE / duration
           sec_per_batch = float(duration / FLAGS.log_frequency)
 
           format_str = ('%s: step %d, loss = %.2f (%.1f examples/sec; %.3f '

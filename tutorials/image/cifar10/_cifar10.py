@@ -43,24 +43,33 @@ import tarfile
 from six.moves import urllib
 import tensorflow as tf
 
-import cifar10_input
-
+import svhn_readInput
 FLAGS = tf.app.flags.FLAGS
+"""
+
 
 # Basic model parameters.
 tf.app.flags.DEFINE_integer('batch_size', 128,
-                            """Number of images to process in a batch.""")
+                            "Number of images to process in a batch.")
 tf.app.flags.DEFINE_string('data_dir', '/tmp/cifar10_data',
-                           """Path to the CIFAR-10 data directory.""")
+                           "Path to the CIFAR-10 data directory.")
 tf.app.flags.DEFINE_boolean('use_fp16', False,
-                            """Train the model using fp16.""")
+                            "Train the model using fp16.")
 
 # Global constants describing the CIFAR-10 data set.
-IMAGE_SIZE = cifar10_input.IMAGE_SIZE
-NUM_CLASSES = cifar10_input.NUM_CLASSES
-NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = cifar10_input.NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN
-NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = cifar10_input.NUM_EXAMPLES_PER_EPOCH_FOR_EVAL
+IMAGE_SIZE = _cifar10_input.IMAGE_SIZE
+NUM_CLASSES = _cifar10_input.NUM_CLASSES
+NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = _cifar10_input.NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN
+NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = _cifar10_input.NUM_EXAMPLES_PER_EPOCH_FOR_EVAL
 
+"""
+tf.app.flags.DEFINE_boolean('use_fp16', False,
+                            "Train the model using fp16.")
+IMAGE_SIZE = svhn_readInput.IMAGE_SIZE
+NUM_CLASSES = svhn_readInput.NUM_CLASSES
+NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = svhn_readInput.NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN
+NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = svhn_readInput.NUM_EXAMPLES_PER_EPOCH_FOR_EVAL
+BATCH_SIZE = svhn_readInput.BATCH_SIZE
 
 # Constants describing the training process.
 #todo: indaga..
@@ -71,13 +80,18 @@ NUM_EPOCHS_PER_DECAY = 105.0      # Epochs after which learning rate decays (350
 LEARNING_RATE_DECAY_FACTOR = 0.1  # Learning rate decay factor. (before 0.1)
 INITIAL_LEARNING_RATE = 0.12  #0.12    # Initial learning rate. (before was 0.1)
 STAIRCASE = False #se è a true decrementa a intervalli discreti... (before was true)
+#for do tests (seems not wokring:
+#NUM_EPOCHS_PER_DECAY = 35.0      # Epochs after which learning rate decays (350).
+#LEARNING_RATE_DECAY_FACTOR = 0.1  # Learning rate decay factor. (before 0.1)
+#INITIAL_LEARNING_RATE = 0.12  #0.12    # Initial learning rate. (before was 0.1)
+#STAIRCASE = False #se è a true decrementa a intervalli discreti... (before was true)
 
 # If a model is trained with multiple GPUs, prefix all Op names with tower_name
 # to differentiate the operations. Note that this prefix is removed from the
 # names of the summaries when visualizing a model.
 TOWER_NAME = 'tower'
 
-DATA_URL = 'https://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz'
+#DATA_URL = 'https://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz'
 
 
 def _activation_summary(x):
@@ -152,9 +166,9 @@ def _variable_with_weight_decay(name, shape, stddev, wd):
     tf.add_to_collection('losses', weight_decay)
   return var
 
-
+"""
 def distorted_inputs():
-  """Construct distorted input for CIFAR training using the Reader ops.
+  Construct distorted input for CIFAR training using the Reader ops.
 
   Returns:
     images: Images. 4D tensor of [batch_size, IMAGE_SIZE, IMAGE_SIZE, 3] size.
@@ -162,20 +176,21 @@ def distorted_inputs():
 
   Raises:
     ValueError: If no data_dir
-  """
+
   if not FLAGS.data_dir:
     raise ValueError('Please supply a data_dir')
   data_dir = os.path.join(FLAGS.data_dir, 'cifar-10-batches-bin')
-  images, labels = cifar10_input.distorted_inputs(data_dir=data_dir,
-                                                  batch_size=FLAGS.batch_size)
+  images, labels = _cifar10_input.distorted_inputs(data_dir=data_dir,
+                                                   batch_size=FLAGS.batch_size)
   if FLAGS.use_fp16:
     images = tf.cast(images, tf.float16)
     labels = tf.cast(labels, tf.float16)
   return images, labels
+"""
 
-
+"""
 def inputs(eval_data):
-  """Construct input for CIFAR evaluation using the Reader ops.
+  #Construct input for CIFAR evaluation using the Reader ops.
 
   Args:
     eval_data: bool, indicating if one should use the train or eval data set.
@@ -186,21 +201,21 @@ def inputs(eval_data):
 
   Raises:
     ValueError: If no data_dir
-  """
+
   if not FLAGS.data_dir:
     raise ValueError('Please supply a data_dir')
   data_dir = os.path.join(FLAGS.data_dir, 'cifar-10-batches-bin')
-  images, labels = cifar10_input.inputs(eval_data=eval_data,
-                                        data_dir=data_dir,
-                                        batch_size=FLAGS.batch_size)
+  images, labels = _cifar10_input.inputs(eval_data=eval_data,
+                                         data_dir=data_dir,
+                                         batch_size=FLAGS.batch_size)
   if FLAGS.use_fp16:
     images = tf.cast(images, tf.float16)
     labels = tf.cast(labels, tf.float16)
   return images, labels
-
+"""
 
 def inference(images):
-  """Build the CIFAR-10 model.
+  """Build the Svhn Model
 
   Args:
     images: Images returned from distorted_inputs() or inputs().
@@ -218,6 +233,7 @@ def inference(images):
     kernel = _variable_with_weight_decay('weights',
                                          #shape=[5, 5, 3, 64],
                                          shape=[6, 6, 3, 90],
+                                        # stddev=5e-2,
                                          stddev=5e-2,
                                          wd=None)
     conv = tf.nn.conv2d(images, kernel, [1, 1, 1, 1], padding='SAME')
@@ -258,7 +274,7 @@ def inference(images):
   #pool2 = tf.nn.avg_pool(norm2, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding='SAME', name='pool2')
   #pool2 = tf.nn.max_pool(norm2, ksize=[1, 2, 2, 1], strides=[1, 1, 1, 1], padding='SAME', name='pool2')
 
-
+  '''
   # conv3
   with tf.variable_scope('conv3') as scope:
       kernel = _variable_with_weight_decay('weights',
@@ -304,19 +320,19 @@ def inference(images):
   # norm3
   norm4 = tf.nn.lrn(pool4, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75,
                     name='norm4')
-
+  '''
 
   lamdaRegularization = 0.01
   # local3
   with tf.variable_scope('local3') as scope:
     # Move everything into depth so we can perform a single matrix multiply.
-    reshape = tf.reshape(norm4, [images.get_shape().as_list()[0], -1])
+    reshape = tf.reshape(norm2, [images.get_shape().as_list()[0], -1])
     dim = reshape.get_shape()[1].value
     #weights = _variable_with_weight_decay('weights', shape=[dim, 384],
     #                                      stddev=0.04, wd=0.004)
-    weights = _variable_with_weight_decay('weights', shape=[dim, 150],
+    weights = _variable_with_weight_decay('weights', shape=[dim, 700],
                                           stddev=0.04, wd=lamdaRegularization)
-    biases = _variable_on_cpu('biases', [150], tf.constant_initializer(0.1))
+    biases = _variable_on_cpu('biases', [700], tf.constant_initializer(0.1))
     local3 = tf.nn.relu(tf.matmul(reshape, weights) + biases, name=scope.name)
     _activation_summary(local3)
 
@@ -341,8 +357,8 @@ def inference(images):
   with tf.variable_scope('softmax_linear') as scope:
    # weights = _variable_with_weight_decay('weights', [192, NUM_CLASSES],
    #                                       stddev=1/192.0, wd=None)
-   weights = _variable_with_weight_decay('weights', [150, NUM_CLASSES],
-                         stddev=1/150.0, wd=None)
+   weights = _variable_with_weight_decay('weights', [700, NUM_CLASSES],
+                         stddev=1/700.0, wd=None)
    biases = _variable_on_cpu('biases', [NUM_CLASSES],
                               tf.constant_initializer(0.0))
    #softmax_linear = tf.add(tf.matmul(local4, weights), biases, name=scope.name)
@@ -417,7 +433,7 @@ def train(total_loss, global_step):
     train_op: op for training.
   """
   # Variables that affect learning rate.
-  num_batches_per_epoch = NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN / FLAGS.batch_size
+  num_batches_per_epoch = NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN / BATCH_SIZE
   decay_steps = int(num_batches_per_epoch * NUM_EPOCHS_PER_DECAY)
 
   # Decay the learning rate exponentially based on the number of steps.

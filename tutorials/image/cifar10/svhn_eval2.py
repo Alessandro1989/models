@@ -10,7 +10,7 @@ from six.moves import urllib
 import numpy as np
 import tensorflow as tf
 
-import cifar10
+import svhn
 import os
 import sys
 import tarfile
@@ -19,8 +19,6 @@ import svhn_readInput
 from pathlib import Path, PureWindowsPath
 
 
-#rename file to eval??
-#Qualcosa non va!! immagini sbagliate ecc...
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -49,12 +47,13 @@ tf.app.flags.DEFINE_boolean('run_once', False,
 #tf.app.flags.DEFINE_integer('batch_size', 64,
  #                           """Number of images to process in a batch.""")
 
-batch_size = 128
+BATCH_SIZE = svhn_readInput.BATCH_SIZE
 
 data_dir = '/tmp/svhn_data'
 data_dirDigits = '/tmp/svhn_dataDigitsEval'
 eval_dir = '/tmp/svhn_eval'
 DATA_URL = 'http://ufldl.stanford.edu/housenumbers/test.tar.gz'
+
 
 
 def eval_once(saver, summary_writer, top_k_op, summary_op):
@@ -87,9 +86,9 @@ def eval_once(saver, summary_writer, top_k_op, summary_op):
         threads.extend(qr.create_threads(sess, coord=coord, daemon=True,
                                          start=True))
 
-      num_iter = int(math.ceil(FLAGS.num_examples / batch_size))
+      num_iter = int(math.ceil(FLAGS.num_examples / BATCH_SIZE))
       true_count = 0  # Counts the number of correct predictions.
-      total_sample_count = num_iter * FLAGS.batch_size
+      total_sample_count = num_iter * BATCH_SIZE
       step = 0
       while step < num_iter and not coord.should_stop():
         predictions = sess.run([top_k_op])
@@ -123,14 +122,14 @@ def evaluate():
 
     # Build a Graph that computes the logits predictions from the
     # inference model.
-    logits = cifar10.inference(images)
+    logits = svhn.inference(images)
 
     # Calculate predictions.
     top_k_op = tf.nn.in_top_k(logits, labels, 1)
 
     # Restore the moving average version of the learned variables for eval.
     variable_averages = tf.train.ExponentialMovingAverage(
-        cifar10.MOVING_AVERAGE_DECAY)
+        svhn.MOVING_AVERAGE_DECAY)
     variables_to_restore = variable_averages.variables_to_restore()
     saver = tf.train.Saver(variables_to_restore)
 

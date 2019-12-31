@@ -16,11 +16,11 @@
 """Evaluation for CIFAR-10.
 
 Accuracy:
-cifar10_train.py achieves 83.0% accuracy after 100K steps (256 epochs
-of data) as judged by cifar10_eval.py.
+_cifar10_train.py achieves 83.0% accuracy after 100K steps (256 epochs
+of data) as judged by _cifar10_eval.py.
 
 Speed:
-On a single Tesla K40, cifar10_train.py processes a single batch of 128 images
+On a single Tesla K40, _cifar10_train.py processes a single batch of 128 images
 in 0.25-0.35 sec (i.e. 350 - 600 images /sec). The model reaches ~86%
 accuracy after 100K steps in 8 hours of training time.
 
@@ -41,7 +41,7 @@ import time
 import numpy as np
 import tensorflow as tf
 
-import cifar10
+import svhn
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -118,18 +118,18 @@ def evaluate():
   with tf.Graph().as_default() as g:
     # Get images and labels for CIFAR-10.
     eval_data = FLAGS.eval_data == 'test'
-    images, labels = cifar10.inputs(eval_data=eval_data)
+    images, labels = svhn.inputs(eval_data=eval_data)
 
     # Build a Graph that computes the logits predictions from the
     # inference model.
-    logits = cifar10.inference(images)
+    logits = svhn.inference(images)
 
     # Calculate predictions.
     top_k_op = tf.nn.in_top_k(logits, labels, 1)
 
     # Restore the moving average version of the learned variables for eval.
     variable_averages = tf.train.ExponentialMovingAverage(
-        cifar10.MOVING_AVERAGE_DECAY)
+        svhn.MOVING_AVERAGE_DECAY)
     variables_to_restore = variable_averages.variables_to_restore()
     saver = tf.train.Saver(variables_to_restore)
 
@@ -146,7 +146,7 @@ def evaluate():
 
 
 def main(argv=None):  # pylint: disable=unused-argument
-  cifar10.maybe_download_and_extract()
+  svhn.maybe_download_and_extract()
   if tf.gfile.Exists(FLAGS.eval_dir):
     tf.gfile.DeleteRecursively(FLAGS.eval_dir)
   tf.gfile.MakeDirs(FLAGS.eval_dir)
