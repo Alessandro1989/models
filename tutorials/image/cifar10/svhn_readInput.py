@@ -29,7 +29,7 @@ DATA_URL = 'http://ufldl.stanford.edu/housenumbers/train.tar.gz'
 IMAGE_SIZE = 24
 
 # Global constants describing the CIFAR-10 data set.
-BATCH_SIZE = 128
+BATCH_SIZE = 64 #128, 
 NUM_CLASSES = 10 #10 digits
 #Esempi in un epoca di train, 50 mila immagini per train e 10 mila per l'eval
 #NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 67814 #Numero esempi per epoca per fare il training

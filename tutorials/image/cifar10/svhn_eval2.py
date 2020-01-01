@@ -35,12 +35,9 @@ tf.app.flags.DEFINE_string('checkpoint_dir', '/tmp/svhn_train',
 tf.app.flags.DEFINE_integer('eval_interval_secs', 10,
                             """How often to run the eval.""")
 
-#Eval examples
-#tf.app.flags.DEFINE_integer('num_examples', 10000,
-#                            """Number of examples to run.""")
 
-tf.app.flags.DEFINE_integer('num_examples', 6000,
-                            """Number of examples to run.""")
+NUM_EXAMPLE = svhn_readInput.NUM_EXAMPLES_PER_EPOCH_FOR_EVAL
+
 
 tf.app.flags.DEFINE_boolean('run_once', False,
                          """Whether to run eval only once.""")
@@ -86,7 +83,7 @@ def eval_once(saver, summary_writer, top_k_op, summary_op):
         threads.extend(qr.create_threads(sess, coord=coord, daemon=True,
                                          start=True))
 
-      num_iter = int(math.ceil(FLAGS.num_examples / BATCH_SIZE))
+      num_iter = int(math.ceil(NUM_EXAMPLE / BATCH_SIZE))
       true_count = 0  # Counts the number of correct predictions.
       total_sample_count = num_iter * BATCH_SIZE
       step = 0

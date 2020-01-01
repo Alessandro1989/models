@@ -45,24 +45,8 @@ import tensorflow as tf
 
 import svhn_readInput
 FLAGS = tf.app.flags.FLAGS
-"""
 
 
-# Basic model parameters.
-tf.app.flags.DEFINE_integer('batch_size', 128,
-                            "Number of images to process in a batch.")
-tf.app.flags.DEFINE_string('data_dir', '/tmp/cifar10_data',
-                           "Path to the CIFAR-10 data directory.")
-tf.app.flags.DEFINE_boolean('use_fp16', False,
-                            "Train the model using fp16.")
-
-# Global constants describing the CIFAR-10 data set.
-IMAGE_SIZE = _cifar10_input.IMAGE_SIZE
-NUM_CLASSES = _cifar10_input.NUM_CLASSES
-NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = _cifar10_input.NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN
-NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = _cifar10_input.NUM_EXAMPLES_PER_EPOCH_FOR_EVAL
-
-"""
 tf.app.flags.DEFINE_boolean('use_fp16', False,
                             "Train the model using fp16.")
 IMAGE_SIZE = svhn_readInput.IMAGE_SIZE
@@ -226,7 +210,7 @@ def inference(images):
   #pool2 = tf.nn.avg_pool(norm2, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding='SAME', name='pool2')
   #pool2 = tf.nn.max_pool(norm2, ksize=[1, 2, 2, 1], strides=[1, 1, 1, 1], padding='SAME', name='pool2')
 
-  '''
+
   # conv3
   with tf.variable_scope('conv3') as scope:
       kernel = _variable_with_weight_decay('weights',
@@ -250,7 +234,7 @@ def inference(images):
   # norm3
   norm3 = tf.nn.lrn(pool3, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75,
                     name='norm2')
-
+  '''
   # conv4
   with tf.variable_scope('conv4') as scope:
       kernel = _variable_with_weight_decay('weights',
@@ -278,7 +262,7 @@ def inference(images):
   # local3
   with tf.variable_scope('local3') as scope:
     # Move everything into depth so we can perform a single matrix multiply.
-    reshape = tf.reshape(norm2, [images.get_shape().as_list()[0], -1])
+    reshape = tf.reshape(norm3, [images.get_shape().as_list()[0], -1])
     dim = reshape.get_shape()[1].value
     #weights = _variable_with_weight_decay('weights', shape=[dim, 384],
     #                                      stddev=0.04, wd=0.004)
