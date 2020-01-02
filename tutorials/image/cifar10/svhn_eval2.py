@@ -22,13 +22,6 @@ from pathlib import Path, PureWindowsPath
 
 FLAGS = tf.app.flags.FLAGS
 
-tf.app.flags.DEFINE_string('eval_dir', '/tmp/svhn_eval',
-                           """Directory where to write event logs.""")
-tf.app.flags.DEFINE_string('eval_data', 'test',
-                           """Either 'test' or 'train_eval'.""")
-tf.app.flags.DEFINE_string('checkpoint_dir', '/tmp/svhn_train',
-                           """Directory where to read model checkpoints.""")
-
 #eval interval:
 #tf.app.flags.DEFINE_integer('eval_interval_secs', 60 * 5,
 #                            """How often to run the eval.""")
@@ -41,16 +34,14 @@ NUM_EXAMPLE = svhn_readInput.NUM_EXAMPLES_PER_EPOCH_FOR_EVAL
 
 tf.app.flags.DEFINE_boolean('run_once', False,
                          """Whether to run eval only once.""")
-#tf.app.flags.DEFINE_integer('batch_size', 64,
- #                           """Number of images to process in a batch.""")
 
 BATCH_SIZE = svhn_readInput.BATCH_SIZE
 
-data_dir = '/tmp/svhn_data'
-data_dirDigits = '/tmp/svhn_dataDigitsEval'
+data_dir = svhn_readInput.data_dir
+data_dirDigits = svhn_readInput.data_dirDigitsEval
+checkpoint_dir = '/tmp/svhn_train'
 eval_dir = '/tmp/svhn_eval'
 DATA_URL = 'http://ufldl.stanford.edu/housenumbers/test.tar.gz'
-
 
 
 def eval_once(saver, summary_writer, top_k_op, summary_op):
@@ -63,12 +54,10 @@ def eval_once(saver, summary_writer, top_k_op, summary_op):
     summary_op: Summary op.
   """
   with tf.Session() as sess:
-    ckpt = tf.train.get_checkpoint_state(FLAGS.checkpoint_dir)
+    ckpt = tf.train.get_checkpoint_state(checkpoint_dir)
     if ckpt and ckpt.model_checkpoint_path:
       # Restores from checkpoint
       saver.restore(sess, ckpt.model_checkpoint_path)
-      # Assuming model_checkpoint_path looks something like:
-      #   /my-favorite-path/cifar10_train/model.ckpt-0,
       # extract global_step from it.
       global_step = ckpt.model_checkpoint_path.split('/')[-1].split('-')[-1]
     else:
@@ -110,10 +99,6 @@ def eval_once(saver, summary_writer, top_k_op, summary_op):
 def evaluate():
   """Eval CIFAR-10 for a number of steps."""
   with tf.Graph().as_default() as g:
-    # Get images and labels for CIFAR-10.
-    eval_data = FLAGS.eval_data == 'test'
-    #images, labels = cifar10.inputs(eval_data=eval_data) -> altrimenti legge i cifar 10..
-    dir = Path(data_dirDigits)
 
     images, labels = svhn_readInput.elaborateInput(True)
 
@@ -133,7 +118,7 @@ def evaluate():
     # Build the summary operation based on the TF collection of Summaries.
     summary_op = tf.summary.merge_all()
 
-    summary_writer = tf.summary.FileWriter(FLAGS.eval_dir, g)
+    summary_writer = tf.summary.FileWriter(eval_dir, g)
 
     while True:
       eval_once(saver, summary_writer, top_k_op, summary_op)

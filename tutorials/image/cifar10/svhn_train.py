@@ -30,8 +30,8 @@ tf.app.flags.DEFINE_integer('log_frequency', 10,
 
 data_dir = '/tmp/svhn_data'
 train_dir = '/tmp/svhn_train'
-data_dirDigitsTrain = '/tmp/svhn_dataDigits'
-data_dirDigitsEval = '/tmp/svhn_dataDigitsEval'
+#data_dirDigitsTrain = '/tmp/svhn_dataDigits'
+#data_dirDigitsEval = '/tmp/svhn_dataDigitsEval'
 
 DATA_URL = 'http://ufldl.stanford.edu/housenumbers/train.tar.gz'
 IMAGE_SIZE = svhn_readInput.IMAGE_SIZE
