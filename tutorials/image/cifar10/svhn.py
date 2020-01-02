@@ -61,8 +61,8 @@ MOVING_AVERAGE_DECAY = 0.9999     # The decay to use for the moving average.
 
 #Learning rate:
 NUM_EPOCHS_PER_DECAY = 105.0      # Epochs after which learning rate decays (350).
-LEARNING_RATE_DECAY_FACTOR = 0.1  # Learning rate decay factor. (before 0.1)
-INITIAL_LEARNING_RATE = 0.12  #0.12    # Initial learning rate. (before was 0.1)
+LEARNING_RATE_DECAY_FACTOR = 0.09  # 0.1 Learning rate decay factor. (before 0.1)
+INITIAL_LEARNING_RATE = 0.1  #0.12    # Initial learning rate. (before was 0.1)
 STAIRCASE = False #se è a true decrementa a intervalli discreti... (before was true)
 #for do tests (seems not wokring:
 #NUM_EPOCHS_PER_DECAY = 35.0      # Epochs after which learning rate decays (350).
@@ -234,7 +234,7 @@ def inference(images):
   # norm3
   norm3 = tf.nn.lrn(pool3, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75,
                     name='norm2')
-  '''
+
   # conv4
   with tf.variable_scope('conv4') as scope:
       kernel = _variable_with_weight_decay('weights',
@@ -257,12 +257,34 @@ def inference(images):
   norm4 = tf.nn.lrn(pool4, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75,
                     name='norm4')
   '''
+  # conv5
+  with tf.variable_scope('conv5') as scope:
+      kernel = _variable_with_weight_decay('weights',
+                                           # shape=[5, 5, 64, 64],
+                                           shape=[6, 6, 90, 90],
+                                           stddev=5e-2,
+                                           wd=None)
+      conv = tf.nn.conv2d(norm4, kernel, [1, 1, 1, 1], padding='SAME')
+      # prima era 64
+      biases = _variable_on_cpu('biases', [90], tf.constant_initializer(0.1))
+      pre_activation = tf.nn.bias_add(conv, biases)
+      conv5 = tf.nn.relu(pre_activation, name=scope.name)
+      _activation_summary(conv5)
+
+  # pool5
+  pool5 = tf.nn.max_pool(conv5, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding='SAME', name='pool2')
+  ############################end##############################
+
+  # norm5
+  norm5 = tf.nn.lrn(pool5, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75,
+                    name='norm4')
+'''
 
   lamdaRegularization = 0.01
   # local3
   with tf.variable_scope('local3') as scope:
     # Move everything into depth so we can perform a single matrix multiply.
-    reshape = tf.reshape(norm3, [images.get_shape().as_list()[0], -1])
+    reshape = tf.reshape(norm4, [images.get_shape().as_list()[0], -1])
     dim = reshape.get_shape()[1].value
     #weights = _variable_with_weight_decay('weights', shape=[dim, 384],
     #                                      stddev=0.04, wd=0.004)
