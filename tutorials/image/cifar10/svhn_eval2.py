@@ -22,12 +22,6 @@ from pathlib import Path, PureWindowsPath
 
 FLAGS = tf.app.flags.FLAGS
 
-tf.app.flags.DEFINE_string('eval_dir', '/tmp/svhn_eval',
-                           """Directory where to write event logs.""")
-tf.app.flags.DEFINE_string('eval_data', 'test',
-                           """Either 'test' or 'train_eval'.""")
-tf.app.flags.DEFINE_string('checkpoint_dir', '/tmp/svhn_train',
-                           """Directory where to read model checkpoints.""")
 
 #eval interval:
 #tf.app.flags.DEFINE_integer('eval_interval_secs', 60 * 5,
@@ -46,9 +40,11 @@ tf.app.flags.DEFINE_boolean('run_once', False,
 
 BATCH_SIZE = svhn_readInput.BATCH_SIZE
 
-data_dir = '/tmp/svhn_data'
-data_dirDigits = '/tmp/svhn_dataDigitsEval'
 eval_dir = '/tmp/svhn_eval'
+data_dir = svhn_readInput.data_dir
+data_dirDigits = svhn_readInput.data_dirDigitsEval
+checkpoint_dir = '/tmp/svhn_train'
+
 DATA_URL = 'http://ufldl.stanford.edu/housenumbers/test.tar.gz'
 
 
@@ -63,7 +59,7 @@ def eval_once(saver, summary_writer, top_k_op, summary_op):
     summary_op: Summary op.
   """
   with tf.Session() as sess:
-    ckpt = tf.train.get_checkpoint_state(FLAGS.checkpoint_dir)
+    ckpt = tf.train.get_checkpoint_state(checkpoint_dir)
     if ckpt and ckpt.model_checkpoint_path:
       # Restores from checkpoint
       saver.restore(sess, ckpt.model_checkpoint_path)
@@ -110,10 +106,6 @@ def eval_once(saver, summary_writer, top_k_op, summary_op):
 def evaluate():
   """Eval CIFAR-10 for a number of steps."""
   with tf.Graph().as_default() as g:
-    # Get images and labels for CIFAR-10.
-    eval_data = FLAGS.eval_data == 'test'
-    #images, labels = cifar10.inputs(eval_data=eval_data) -> altrimenti legge i cifar 10..
-    dir = Path(data_dirDigits)
 
     images, labels = svhn_readInput.elaborateInput(True)
 
@@ -133,7 +125,7 @@ def evaluate():
     # Build the summary operation based on the TF collection of Summaries.
     summary_op = tf.summary.merge_all()
 
-    summary_writer = tf.summary.FileWriter(FLAGS.eval_dir, g)
+    summary_writer = tf.summary.FileWriter(eval_dir, g)
 
     while True:
       eval_once(saver, summary_writer, top_k_op, summary_op)

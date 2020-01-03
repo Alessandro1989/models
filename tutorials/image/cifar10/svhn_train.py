@@ -11,7 +11,6 @@ from tensorflow.python.summary import summary
 from tensorflow.python.training import queue_runner
 from tensorflow.python.ops import array_ops
 import svhn_readInput
-import _cifar10_input
 from datetime import datetime
 import time
 
