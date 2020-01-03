@@ -217,13 +217,12 @@ def generate_image_and_label_batch(image, label, min_queue_examples,
 
 def readInfoAndCropDigitsEval():
     data_dir = '/tmp/svhn_data'
-    #data_dirDigits = '/tmp/svhn_dataDigitsEval'
-    data_dirDigits = data_dirDigitsEval
+    data_dirDigits = '/tmp/svhn_dataDigitsEval'
     pathDataDir = Path(data_dir, 'test')
     #data_dir = 'C:/Users/alessandro.novi/Desktop/ale/uni/house numbers/primo formato/test.tar/test'
     #pathDataDir = Path(data_dir)
     listFiles = list(pathDataDir.glob('*.png'))
-    #size = (128, 128)
+    size = (128, 128)
 
 
     digitsInfo = read_digitStruct("digitStruct_eval.txt")
