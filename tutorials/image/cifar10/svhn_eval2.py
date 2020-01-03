@@ -24,17 +24,13 @@ FLAGS = tf.app.flags.FLAGS
 
 
 #eval interval:
-#tf.app.flags.DEFINE_integer('eval_interval_secs', 60 * 5,
-#                            """How often to run the eval.""")
 tf.app.flags.DEFINE_integer('eval_interval_secs', 10,
                             """How often to run the eval.""")
-
-
+tf.app.flags.DEFINE_boolean('run_once', False,
+                         """Whether to run eval only once.""")
 NUM_EXAMPLE = svhn_readInput.NUM_EXAMPLES_PER_EPOCH_FOR_EVAL
 
 
-tf.app.flags.DEFINE_boolean('run_once', False,
-                         """Whether to run eval only once.""")
 #tf.app.flags.DEFINE_integer('batch_size', 64,
  #                           """Number of images to process in a batch.""")
 
@@ -106,7 +102,6 @@ def eval_once(saver, summary_writer, top_k_op, summary_op):
 def evaluate():
   """Eval CIFAR-10 for a number of steps."""
   with tf.Graph().as_default() as g:
-
     images, labels = svhn_readInput.elaborateInput(True)
 
     # Build a Graph that computes the logits predictions from the
