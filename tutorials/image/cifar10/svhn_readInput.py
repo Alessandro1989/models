@@ -110,7 +110,8 @@ def elaborateInput(eval=False):
     # Subtract off the mean and divide by the variance of the pixels.
     float_image = tf.image.per_image_standardization(img_f)
   else:
-    float_image = img_f
+    float_image = tf.image.per_image_standardization(img_f)
+    #float_image = img_f
 
   height = IMAGE_SIZE
   width = IMAGE_SIZE
@@ -216,19 +217,14 @@ def generate_image_and_label_batch(image, label, min_queue_examples,
 
 
 def readInfoAndCropDigitsEval():
-    data_dir = '/tmp/svhn_data'
-    data_dirDigits = '/tmp/svhn_dataDigitsEval'
     pathDataDir = Path(data_dir, 'test')
-    #data_dir = 'C:/Users/alessandro.novi/Desktop/ale/uni/house numbers/primo formato/test.tar/test'
-    #pathDataDir = Path(data_dir)
     listFiles = list(pathDataDir.glob('*.png'))
-    size = (128, 128)
-
+    #size = (128, 128)
 
     digitsInfo = read_digitStruct("digitStruct_eval.txt")
     # qui ci occupiamo di tagliare le cifre e fare il dataset
 
-    dir = Path(data_dirDigits)
+    dir = Path(data_dirDigitsEval)
     if(not dir.exists()):
         dir.mkdir()
     else:
@@ -260,7 +256,7 @@ def readInfoAndCropDigitsEval():
             #im = im.resize(size) #thumbnail is better.. -> doesn't work!!!
             #im.thumbnail(size) (never mind, it will do later)..
             fileNameImgForSave = fileNameImg.split(".")[0]+"_" + label + ".png"
-            fileToSave = Path(data_dirDigits, fileNameImgForSave)
+            fileToSave = Path(data_dirDigitsEval, fileNameImgForSave)
             im.save(fileToSave, "JPEG")
 
         iteration +=1
@@ -272,7 +268,6 @@ def readInfoAndCropDigitsEval():
 
 def readInfoAndCropDigits():
     data_dir = '/tmp/svhn_data'
-    data_dirDigits = '/tmp/svhn_dataDigits'
     pathDataDir = Path(data_dir, 'train')
     listFiles = list(pathDataDir.glob('*.png'))
     size = (128, 128)
@@ -281,7 +276,7 @@ def readInfoAndCropDigits():
     digitsInfo = read_digitStruct("digitStruct_train.txt")
     # qui ci occupiamo di tagliare le cifre e fare il dataset
 
-    dir = Path(data_dirDigits)
+    dir = Path(data_dirDigitsTrain)
     if(not dir.exists()):
         dir.mkdir()
     else:
@@ -313,7 +308,7 @@ def readInfoAndCropDigits():
             #im = im.resize(size) #thumbnail is better.. -> doesn't work!!!
             #im.thumbnail(size) (never mind, it will do later)..
             fileNameImgForSave = fileNameImg.split(".")[0]+"_" + label + ".png"
-            fileToSave = Path(data_dirDigits, fileNameImgForSave)
+            fileToSave = Path(data_dirDigitsTrain, fileNameImgForSave)
             im.save(fileToSave, "JPEG")
 
         iteration +=1
