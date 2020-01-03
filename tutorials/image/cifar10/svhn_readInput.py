@@ -110,7 +110,8 @@ def elaborateInput(eval=False):
     # Subtract off the mean and divide by the variance of the pixels.
     float_image = tf.image.per_image_standardization(img_f)
   else:
-    float_image = img_f
+    float_image = tf.image.per_image_standardization(img_f)
+    #float_image = img_f
 
   height = IMAGE_SIZE
   width = IMAGE_SIZE
@@ -216,13 +217,9 @@ def generate_image_and_label_batch(image, label, min_queue_examples,
 
 
 def readInfoAndCropDigitsEval():
-    data_dir = '/tmp/svhn_data'
     pathDataDir = Path(data_dir, 'test')
-    #data_dir = 'C:/Users/alessandro.novi/Desktop/ale/uni/house numbers/primo formato/test.tar/test'
-    #pathDataDir = Path(data_dir)
     listFiles = list(pathDataDir.glob('*.png'))
     #size = (128, 128)
-
 
     digitsInfo = read_digitStruct("digitStruct_eval.txt")
     # qui ci occupiamo di tagliare le cifre e fare il dataset
