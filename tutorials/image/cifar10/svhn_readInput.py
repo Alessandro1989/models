@@ -26,7 +26,7 @@ data_dirDigitsTrain = '/tmp/svhn_dataDigits'
 data_dirDigitsEval = '/tmp/svhn_dataDigitsEval'
 
 DATA_URL = 'http://ufldl.stanford.edu/housenumbers/train.tar.gz'
-IMAGE_SIZE = 24
+IMAGE_SIZE = 32 #24
 
 # Global constants describing the CIFAR-10 data set.
 BATCH_SIZE = 64 #128, 
@@ -77,73 +77,75 @@ def elaborateInput(eval=False):
   # Create a queue that produces the filenames to read
   # (he converts the strings in tensors) and add them to the fifoqueue
   filename_queue = tf.train.string_input_producer(filenames)
-  reader = tf.WholeFileReader("reader")
-  #restituisce una stringa che rappresenta il contenuto, e una stringa per il filename
-  key,value = reader.read(filename_queue, "read")
-  img_u = tf.image.decode_jpeg(value, channels=3)
-  img_f = tf.cast(img_u, tf.float32)
-  #img_4 = tf.expand_dims(img_f, 0)
 
-  #4-D Tensor of shape [batch, height, width, channels] ?? channels = 3 , e altezza e larghezze delle immagini???
-  #img_f = tf.image.random_flip_left_right(img_f) # must not used NA
-  if not eval:
+  with tf.name_scope('reading'):
+      reader = tf.WholeFileReader("reader")
+      #restituisce una stringa che rappresenta il contenuto, e una stringa per il filename
+      key,value = reader.read(filename_queue, "read")
+      img_u = tf.image.decode_jpeg(value, channels=3)
+      img_f = tf.cast(img_u, tf.float32)
+      #img_4 = tf.expand_dims(img_f, 0)
 
-    """
-    rotation:
-    degrees = 15
-    rateForRadiants = math.pi / 180
+      #4-D Tensor of shape [batch, height, width, channels] ?? channels = 3 , e altezza e larghezze delle immagini???
+      #img_f = tf.image.random_flip_left_right(img_f) # must not used NA
+      if not eval:
+
+        """
+        rotation:
+        degrees = 15
+        rateForRadiants = math.pi / 180
+    
+    
+        random_angles = tf.random_uniform([1], minval  = -(degrees * rateForRadiants), maxval=(degrees * rateForRadiants))
+    
+        # not work: img_f = tf.contrib.image.rotate(img_f, tf.random_uniform([1],(- (degrees * rateForRadiants), (degrees * rateForRadiants))))
+        #output = transform(images, angles_to_projective_transforms(angles, image_height, image_width),interpolation=interpolation)
+    
+        image_height = math_ops.cast(array_ops.shape(img_f)[1], dtypes.float32)[None]
+        image_width = math_ops.cast(array_ops.shape(img_f)[2], dtypes.float32)[None]
+        img_f = tf.contrib.image.transform(img_f,  tf.contrib.image.angles_to_projective_transforms(random_angles,
+        image_height, image_width))
+        """
+        with tf.name_scope('data_augmentation'):
+            img_f = tf.image.random_brightness(img_f, max_delta=63)  #63
+            img_f = tf.image.random_contrast(img_f, lower=0.2, upper=1.8)
+
+            # Subtract off the mean and divide by the variance of the pixels.
+            float_image = tf.image.per_image_standardization(img_f)
+      else:
+        float_image = tf.image.per_image_standardization(img_f)
+        #float_image = img_f
+
+      height = IMAGE_SIZE
+      width = IMAGE_SIZE
+      # Set the shapes of tensors.
+      #float_image.set_shape([height, width, 3]) #doesnt work!!-> seems just for infos.. it's not our case
 
 
-    random_angles = tf.random_uniform([1], minval  = -(degrees * rateForRadiants), maxval=(degrees * rateForRadiants))
 
-    # not work: img_f = tf.contrib.image.rotate(img_f, tf.random_uniform([1],(- (degrees * rateForRadiants), (degrees * rateForRadiants))))
-    #output = transform(images, angles_to_projective_transforms(angles, image_height, image_width),interpolation=interpolation)
+      #try a easier way
+      splits = tf.string_split([key], "\\")
+      pngName = splits.values[-1] #"xxx_label.png"
 
-    image_height = math_ops.cast(array_ops.shape(img_f)[1], dtypes.float32)[None]
-    image_width = math_ops.cast(array_ops.shape(img_f)[2], dtypes.float32)[None]
-    img_f = tf.contrib.image.transform(img_f,  tf.contrib.image.angles_to_projective_transforms(random_angles,
-    image_height, image_width))
-    """
-    img_f = tf.image.random_brightness(img_f, max_delta=63)  #63
-    img_f = tf.image.random_contrast(img_f, lower=0.2, upper=1.8)
+      #op_printlabel = tf.Print(pngName, [pngName], "tensorLabel")
 
-    # Subtract off the mean and divide by the variance of the pixels.
-    float_image = tf.image.per_image_standardization(img_f)
-  else:
-    float_image = tf.image.per_image_standardization(img_f)
-    #float_image = img_f
+      label = tf.string_split( [tf.string_split([pngName], "\\.").values[0]] ,'_').values[1]
 
-  height = IMAGE_SIZE
-  width = IMAGE_SIZE
-  # Set the shapes of tensors.
-  #float_image.set_shape([height, width, 3]) #doesnt work!!-> seems just for infos.. it's not our case
+      #with tf.control_dependencies([op_printlabel]):
+      labelNumber = tf.strings.to_number(label, tf.int32)
+      float_image = tf.image.resize_image_with_pad(float_image, height, width)
 
+      # Ensure that the random shuffling has good mixing properties.
+      min_fraction_of_examples_in_queue = 0.4
 
+      if not eval:
+          numExample = NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN
+      else:
+          numExample = NUM_EXAMPLES_PER_EPOCH_FOR_EVAL
 
-  #try a easier way
-  splits = tf.string_split([key], "\\")
-  pngName = splits.values[-1] #"xxx_label.png"
-
-  #op_printlabel = tf.Print(pngName, [pngName], "tensorLabel")
-
-  label = tf.string_split( [tf.string_split([pngName], "\\.").values[0]] ,'_').values[1]
-
-  #with tf.control_dependencies([op_printlabel]):
-  labelNumber = tf.strings.to_number(label, tf.int32)
-  float_image = tf.image.resize_image_with_pad(float_image, height, width)
-  #img_4 = tf.expand_dims(float_image, 0)
-
-  # Ensure that the random shuffling has good mixing properties.
-  min_fraction_of_examples_in_queue = 0.4
-
-  if not eval:
-      numExample = NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN
-  else:
-      numExample = NUM_EXAMPLES_PER_EPOCH_FOR_EVAL
-
-  min_queue_examples = int(numExample * min_fraction_of_examples_in_queue)
-  print ('Filling queue with %d SVHN images before starting to train. '
-           'This will take a few minutes.' % min_queue_examples)
+      min_queue_examples = int(numExample * min_fraction_of_examples_in_queue)
+      print ('Filling queue with %d SVHN images before starting to train. '
+               'This will take a few minutes.' % min_queue_examples)
 
   return generate_image_and_label_batch(float_image, labelNumber,
                                                        min_queue_examples, BATCH_SIZE ,
