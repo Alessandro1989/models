@@ -56,7 +56,6 @@ NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = svhn_readInput.NUM_EXAMPLES_PER_EPOCH_FOR_EVAL
 BATCH_SIZE = svhn_readInput.BATCH_SIZE
 
 # Constants describing the training process.
-#todo: indaga..
 MOVING_AVERAGE_DECAY = 0.9999     # The decay to use for the moving average.
 
 #Learning rate:
@@ -180,15 +179,15 @@ def inference(images):
         conv1 = tf.nn.relu(pre_activation, name=scope.name)
         _activation_summary(conv1)
 
-      # pool1
-      #pool1 = tf.nn.max_pool(conv1, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1],
-       #                      padding='SAME', name='pool1')
-      # norm1
-      pool1 = tf.nn.max_pool(conv1, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1],padding='SAME', name='pool1')
+        # pool1
+        #pool1 = tf.nn.max_pool(conv1, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1],
+        #                      padding='SAME', name='pool1')
+        # norm1
+        pool1 = tf.nn.max_pool(conv1, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1],padding='SAME', name='pool1')
 
-      norm1 = tf.nn.lrn(pool1, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75, name='norm1')
+        norm1 = tf.nn.lrn(pool1, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75, name='norm1')
 
-      # conv2
+        # conv2
       with tf.variable_scope('conv2') as scope:
         kernel = _variable_with_weight_decay('weights',
                                              #shape=[5, 5, 64, 64],
@@ -202,9 +201,9 @@ def inference(images):
         conv2 = tf.nn.relu(pre_activation, name=scope.name)
         _activation_summary(conv2)
 
-      pool2 = tf.nn.avg_pool(conv2, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding='SAME', name='pool2')
-      # norm2
-      norm2 = tf.nn.lrn(pool2, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75,
+        pool2 = tf.nn.avg_pool(conv2, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding='SAME', name='pool2')
+        # norm2
+        norm2 = tf.nn.lrn(pool2, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75,
                         name='norm2')
       # pool2
       #pool2 = tf.nn.max_pool(norm2, ksize=[1, 3, 3, 1],strides=[1, 2, 2, 1], padding='SAME', name='pool2')
@@ -226,15 +225,14 @@ def inference(images):
           conv3 = tf.nn.relu(pre_activation, name=scope.name)
           _activation_summary(conv3)
 
+          # pool3
+          # pool3 = tf.nn.max_pool(norm2, ksize=[1, 3, 3, 1],strides=[1, 2, 2, 1], padding='SAME', name='pool2')
+          pool3 = tf.nn.max_pool(conv3, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding='SAME', name='pool2')
+           ############################end##############################
 
-      # pool3
-      # pool3 = tf.nn.max_pool(norm2, ksize=[1, 3, 3, 1],strides=[1, 2, 2, 1], padding='SAME', name='pool2')
-      pool3 = tf.nn.max_pool(conv3, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding='SAME', name='pool2')
-       ############################end##############################
-
-      # norm3
-      norm3 = tf.nn.lrn(pool3, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75,
-                        name='norm2')
+          # norm3
+          norm3 = tf.nn.lrn(pool3, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75,
+                            name='norm2')
 
       # conv4
       with tf.variable_scope('conv4') as scope:
@@ -250,13 +248,13 @@ def inference(images):
           conv4 = tf.nn.relu(pre_activation, name=scope.name)
           _activation_summary(conv4)
 
-      # pool3
-      pool4 = tf.nn.max_pool(conv4, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding='SAME', name='pool2')
-       ############################end##############################
+          # pool3
+          pool4 = tf.nn.max_pool(conv4, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding='SAME', name='pool2')
+           ############################end##############################
 
-      # norm3
-      norm4 = tf.nn.lrn(pool4, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75,
-                        name='norm4')
+          # norm3
+          norm4 = tf.nn.lrn(pool4, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75,
+                            name='norm4')
 
       """
       # conv5
