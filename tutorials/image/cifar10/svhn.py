@@ -280,7 +280,9 @@ def inference(images):
                         name='norm4')
       """
 
-      lamdaRegularization = 0.01
+      #lamdaRegularization = 0.025
+      lamdaRegularization = 0.025
+      #0.3
       # local3
       with tf.variable_scope('local3') as scope:
         # Move everything into depth so we can perform a single matrix multiply.
