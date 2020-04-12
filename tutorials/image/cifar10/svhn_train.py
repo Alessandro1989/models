@@ -4,17 +4,14 @@ import sys
 from six.moves import urllib
 import tarfile
 import datetime
-from pathlib import Path, PureWindowsPath
-from tensorflow.python.framework import ops
-from tensorflow.python.framework import dtypes
-from tensorflow.python.summary import summary
-from tensorflow.python.training import queue_runner
-from tensorflow.python.ops import array_ops
+
 import svhn_readInput
 from datetime import datetime
 import time
 
 import tensorflow as tf
+
+from enumTypeSet import  TypeSet
 
 import svhn
 
@@ -51,7 +48,7 @@ def train():
     # Force input pipeline to CPU:0 to avoid operations sometimes ending up on GPU and resulting in a slow down.
     with tf.device('/cpu:0'):
       #images, labels = elaborateInput()
-      images, labels = svhn_readInput.elaborateInput()
+      images, labels = svhn_readInput.elaborateInput(TypeSet.TRAIN)
 
     # Build a Graph that computes the logits predictions from the
     # inference model.

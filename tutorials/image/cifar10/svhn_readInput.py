@@ -1,23 +1,10 @@
 from __future__ import print_function
 from PIL import Image
-import os
-import sys
 from pathlib import Path, PureWindowsPath
-import tensorflow as tf
-from six.moves import urllib
-import tarfile
-import datetime
-from pathlib import Path, PureWindowsPath
-from tensorflow.python.framework import ops
 import random
-from tensorflow.python.ops import math_ops
-from tensorflow.python.framework import ops
-from tensorflow.python.ops import array_ops
-from tensorflow.python.framework import dtypes
-
-import math
-
 import tensorflow as tf
+
+from enumTypeSet import TypeSet
 
 
 data_dir = '/tmp/svhn_data'
@@ -29,14 +16,14 @@ DATA_URL = 'http://ufldl.stanford.edu/housenumbers/train.tar.gz'
 IMAGE_SIZE = 32 #24
 
 # Global constants describing the CIFAR-10 data set.
-BATCH_SIZE = 64 #128, 
+BATCH_SIZE =  64#64
 NUM_CLASSES = 10 #10 digits
-#Esempi in un epoca di train, 50 mila immagini per train e 10 mila per l'eval
-#NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 67814 #Numero esempi per epoca per fare il training
-#NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 67000
-NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 67000
-NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 24000  #Numero esempi per epoca per fare l'eval
-#NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 10000  #Numero esempi per epoca per fare l'eval
+
+#NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 67813 #Numero esempi per epoca per fare il training (una e stata eliminata)
+NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 61813
+NUM_EXAMPLES_PER_EPOCH_FOR_VALIDATION = 6000
+NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 24000
+
 
 def main():
     print("main readinput")
@@ -46,7 +33,9 @@ def main():
     #read_input_train()
 
 
-def elaborateInput(eval=False):
+def elaborateInput(TypeSet):
+
+  #if TypeSet == null error TODO:..
   """Construct distorted input for SVHN training using the Reader ops.
 
   Returns:
@@ -55,24 +44,26 @@ def elaborateInput(eval=False):
   """
 
   #crop digits if is necessary
-  if(eval):
+  if TypeSet.TEST:
     dir = Path(data_dirDigitsEval)
   else:
     dir = Path(data_dirDigitsTrain)
 
   if (not dir.exists()):
-    if not eval:
+    if not TypeSet.TEST:
       readInfoAndCropDigits()
     else:
       readInfoAndCropDigitsEval()
 
-  #pathDataDir = Path(data_dir, 'train')
-  #pathDataDir = Path(data_dirDigitsTrain)
 
   filenames = list(dir.glob('*.png'))
   # converte in a list of string paths
   filenames = list(map(lambda x: str(x.absolute()), filenames))
 
+  validationFilenames = []
+  if not TypeSet.TEST: #In the test set i don't must delete any elements
+    for i in range(0, NUM_EXAMPLES_PER_EPOCH_FOR_VALIDATION):
+        validationFilenames.append(filenames.pop(random.randrange(len(filenames)-1)))
 
   # Create a queue that produces the filenames to read
   # (he converts the strings in tensors) and add them to the fifoqueue
@@ -84,11 +75,12 @@ def elaborateInput(eval=False):
       key,value = reader.read(filename_queue, "read")
       img_u = tf.image.decode_jpeg(value, channels=3)
       img_f = tf.cast(img_u, tf.float32)
-      #img_4 = tf.expand_dims(img_f, 0)
 
       #4-D Tensor of shape [batch, height, width, channels] ?? channels = 3 , e altezza e larghezze delle immagini???
-      #img_f = tf.image.random_flip_left_right(img_f) # must not used NA
-      if not eval:
+
+
+      #data augmentation
+      if TypeSet.TRAIN:
 
         """
         rotation:
@@ -110,18 +102,14 @@ def elaborateInput(eval=False):
             img_f = tf.image.random_brightness(img_f, max_delta=63)  #63
             img_f = tf.image.random_contrast(img_f, lower=0.2, upper=1.8)
 
-            # Subtract off the mean and divide by the variance of the pixels.
-            float_image = tf.image.per_image_standardization(img_f)
-      else:
-        float_image = tf.image.per_image_standardization(img_f)
-        #float_image = img_f
+
+      # Subtract off the mean and divide by the variance of the pixels.
+      float_image = tf.image.per_image_standardization(img_f)
 
       height = IMAGE_SIZE
       width = IMAGE_SIZE
       # Set the shapes of tensors.
       #float_image.set_shape([height, width, 3]) #doesnt work!!-> seems just for infos.. it's not our case
-
-
 
       #try a easier way
       splits = tf.string_split([key], "\\")
@@ -138,10 +126,13 @@ def elaborateInput(eval=False):
       # Ensure that the random shuffling has good mixing properties.
       min_fraction_of_examples_in_queue = 0.4
 
-      if not eval:
+      if TypeSet.TRAIN:
           numExample = NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN
-      else:
+      if TypeSet.VALIDATION:
+          numExample = NUM_EXAMPLES_PER_EPOCH_FOR_VALIDATION
+      if TypeSet.TEST:
           numExample = NUM_EXAMPLES_PER_EPOCH_FOR_EVAL
+
 
       min_queue_examples = int(numExample * min_fraction_of_examples_in_queue)
       print ('Filling queue with %d SVHN images before starting to train. '
@@ -152,38 +143,6 @@ def elaborateInput(eval=False):
                                                        shuffle=True)
 
 
-  # -------------------------------------------------------------------------#-------------------------------------------------------------------------#-------------------------------------------------------------------------#-------------------------------------------------------------------------
-  # -------------------------------------------------------------------------#---OTHER STUFF..----------------------------------------------------------------------#-------------------------------------------------------------------------
-  """
-  #keyexpand = tf.expand_dims(key,0)
-  #splitPng = tf.strings.split(keyexpand, "\\")
-  #png = splitPng[-1]
-  #to fix : 4 -> with dimshape()-1
-  #png = tf.sparse_slice(splitPng,[0,4],[1,1])
-
-  img_opsummary = tf.summary.image("img", img_4)
-
-  with tf.Session() as sess:
-    coord = tf.train.Coordinator()
-    threads = tf.train.start_queue_runners(coord=coord)
-    print(sess.run([key, pngName, label])) #sta eseguendo lo stesso grafo, key e label corrispondono in questa maniera (un solo run)
-
-    train_writer = tf.summary.FileWriter(train_dir, sess.graph)
-    #for i in range(1,len(filenames)):
-    for i in range(1, 20):
-      #perche solo 10 immagini per "slot"? (facendo così va un po' meglio ma mica tatno però!)
-      print(i)
-      #print(key.eval())
-      img_opsummary = tf.summary.image(str(i), img_4, 1000)
-      for i in range(1,15):
-
-        #pngname = key.eval().decode("utf-8").split("\\")[-1]
-        imgop_sess = sess.run(img_opsummary) #need label together..
-        train_writer.add_summary(imgop_sess)
-
-    coord.request_stop()
-    coord.join(threads)
-    """
 
 
 def generate_image_and_label_batch(image, label, min_queue_examples,
