@@ -22,7 +22,7 @@ NUM_CLASSES = 10 #10 digits
 #NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 67813 #Numero esempi per epoca per fare il training (una e stata eliminata)
 NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 61813
 NUM_EXAMPLES_PER_EPOCH_FOR_VALIDATION = 6000
-NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 24000
+NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 24514
 
 
 def main():
@@ -33,7 +33,7 @@ def main():
     #read_input_train()
 
 
-def elaborateInput(TypeSet):
+def elaborateInput(typeSet):
 
   #if TypeSet == null error TODO:..
   """Construct distorted input for SVHN training using the Reader ops.
@@ -44,13 +44,13 @@ def elaborateInput(TypeSet):
   """
 
   #crop digits if is necessary
-  if TypeSet.TEST:
+  if typeSet is TypeSet.TEST:
     dir = Path(data_dirDigitsEval)
   else:
     dir = Path(data_dirDigitsTrain)
 
   if (not dir.exists()):
-    if not TypeSet.TEST:
+    if typeSet is not TypeSet.TEST:
       readInfoAndCropDigits()
     else:
       readInfoAndCropDigitsEval()
@@ -61,7 +61,7 @@ def elaborateInput(TypeSet):
   filenames = list(map(lambda x: str(x.absolute()), filenames))
 
   validationFilenames = []
-  if not TypeSet.TEST: #In the test set i don't must delete any elements
+  if typeSet is not TypeSet.TEST: #In the test set i don't must delete any elements
     for i in range(0, NUM_EXAMPLES_PER_EPOCH_FOR_VALIDATION):
         validationFilenames.append(filenames.pop(random.randrange(len(filenames)-1)))
 
@@ -73,35 +73,14 @@ def elaborateInput(TypeSet):
       reader = tf.WholeFileReader("reader")
       #restituisce una stringa che rappresenta il contenuto, e una stringa per il filename
       key,value = reader.read(filename_queue, "read")
-      img_u = tf.image.decode_jpeg(value, channels=3)
+      img_u = tf.image.decode_jpeg(value, channels=1) # TRY WITH ONE CHANNEL
       img_f = tf.cast(img_u, tf.float32)
 
-      #4-D Tensor of shape [batch, height, width, channels] ?? channels = 3 , e altezza e larghezze delle immagini???
-
-
       #data augmentation
-      if TypeSet.TRAIN:
-
-        """
-        rotation:
-        degrees = 15
-        rateForRadiants = math.pi / 180
-    
-    
-        random_angles = tf.random_uniform([1], minval  = -(degrees * rateForRadiants), maxval=(degrees * rateForRadiants))
-    
-        # not work: img_f = tf.contrib.image.rotate(img_f, tf.random_uniform([1],(- (degrees * rateForRadiants), (degrees * rateForRadiants))))
-        #output = transform(images, angles_to_projective_transforms(angles, image_height, image_width),interpolation=interpolation)
-    
-        image_height = math_ops.cast(array_ops.shape(img_f)[1], dtypes.float32)[None]
-        image_width = math_ops.cast(array_ops.shape(img_f)[2], dtypes.float32)[None]
-        img_f = tf.contrib.image.transform(img_f,  tf.contrib.image.angles_to_projective_transforms(random_angles,
-        image_height, image_width))
-        """
+      if typeSet is TypeSet.TRAIN:
         with tf.name_scope('data_augmentation'):
             img_f = tf.image.random_brightness(img_f, max_delta=63)  #63
             img_f = tf.image.random_contrast(img_f, lower=0.2, upper=1.8)
-
 
       # Subtract off the mean and divide by the variance of the pixels.
       float_image = tf.image.per_image_standardization(img_f)
@@ -126,11 +105,11 @@ def elaborateInput(TypeSet):
       # Ensure that the random shuffling has good mixing properties.
       min_fraction_of_examples_in_queue = 0.4
 
-      if TypeSet.TRAIN:
+      if typeSet is TypeSet.TRAIN:
           numExample = NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN
-      if TypeSet.VALIDATION:
+      elif typeSet is TypeSet.VALIDATION:
           numExample = NUM_EXAMPLES_PER_EPOCH_FOR_VALIDATION
-      if TypeSet.TEST:
+      elif typeSet is TypeSet.TEST:
           numExample = NUM_EXAMPLES_PER_EPOCH_FOR_EVAL
 
 
@@ -150,7 +129,7 @@ def generate_image_and_label_batch(image, label, min_queue_examples,
   """Construct a queued batch of images and labels.
 
   Args:
-    image: 3-D Tensor of [height, width, 3] of type.float32.
+    image: 3-D Tensor of [height, width, 3] of type.float32. -> direi 1 D tensor (bianco e nero)
     label: 1-D Tensor of type.int32
     min_queue_examples: int32, minimum number of samples to retain
       in the queue that provides of batches of examples.
@@ -158,7 +137,7 @@ def generate_image_and_label_batch(image, label, min_queue_examples,
     shuffle: boolean indicating whether to use a shuffling queue.
 
   Returns:
-    images: Images. 4D tensor of [batch_size, height, width, 3] size.
+    images: Images. 4D tensor of [batch_size, height, width, 3] size. -> 3 d tensors [batch size, height, width, 1] (vedi con il debug però)
     labels: Labels. 1D tensor of [batch_size] size.
   """
   # Create a queue that shuffles the examples, and then

@@ -168,8 +168,10 @@ def inference(images):
       with tf.variable_scope('conv1') as scope:
         kernel = _variable_with_weight_decay('weights',
                                              #shape=[5, 5, 3, 64],
-                                             shape=[6, 6, 3, 90],
-                                            # stddev=5e-2,
+                                             #shape=[6, 6, 3, 90], #1 channel now?, right?
+                                             # 1 channel now?, right?
+                                             shape=[6, 6, 1, 90],
+                                             # stddev=5e-2,
                                              stddev=5e-2,
                                              wd=None)
         conv = tf.nn.conv2d(images, kernel, [1, 1, 1, 1], padding='SAME')
