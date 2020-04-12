@@ -16,7 +16,7 @@ import sys
 import tarfile
 import svhn_readInput
 
-from pathlib import Path, PureWindowsPath
+from enumTypeSet import TypeSet
 
 
 
@@ -28,20 +28,18 @@ tf.app.flags.DEFINE_integer('eval_interval_secs', 10,
                             """How often to run the eval.""")
 tf.app.flags.DEFINE_boolean('run_once', False,
                          """Whether to run eval only once.""")
-NUM_EXAMPLE = svhn_readInput.NUM_EXAMPLES_PER_EPOCH_FOR_EVAL
+NUM_EXAMPLE = svhn_readInput.NUM_EXAMPLES_PER_EPOCH_FOR_VALIDATION
 
 
-#tf.app.flags.DEFINE_integer('batch_size', 64,
- #                           """Number of images to process in a batch.""")
+
 
 BATCH_SIZE = svhn_readInput.BATCH_SIZE
 
-eval_dir = '/tmp/svhn_eval'
+validation_dir = '/tmp/svhn_validation'
 data_dir = svhn_readInput.data_dir
-data_dirDigits = svhn_readInput.data_dirDigitsEval
+data_dirDigits = svhn_readInput.data_dirDigitsTrain
 checkpoint_dir = '/tmp/svhn_train'
 
-DATA_URL = 'http://ufldl.stanford.edu/housenumbers/test.tar.gz'
 
 
 
@@ -102,7 +100,7 @@ def eval_once(saver, summary_writer, top_k_op, summary_op):
 def evaluate():
   """Eval CIFAR-10 for a number of steps."""
   with tf.Graph().as_default() as g:
-    images, labels = svhn_readInput.elaborateInput(True)
+    images, labels = svhn_readInput.elaborateInput(TypeSet.VALIDATION)
 
     # Build a Graph that computes the logits predictions from the
     # inference model.
@@ -120,7 +118,7 @@ def evaluate():
     # Build the summary operation based on the TF collection of Summaries.
     summary_op = tf.summary.merge_all()
 
-    summary_writer = tf.summary.FileWriter(eval_dir, g)
+    summary_writer = tf.summary.FileWriter(validation_dir, g)
 
     while True:
       eval_once(saver, summary_writer, top_k_op, summary_op)
@@ -129,6 +127,7 @@ def evaluate():
       time.sleep(FLAGS.eval_interval_secs)
 
 
+"""
 def maybe_download_and_extract():
   if not os.path.exists(data_dir):
     os.makedirs(data_dir)
@@ -148,13 +147,13 @@ def maybe_download_and_extract():
   if not os.path.exists(extracted_dir_path):
     print("extracting images.. it takes some time")
     tarfile.open(filepath, 'r:gz').extractall(data_dir)
+"""
 
-
-def main(argv=None):  # pylint: disable=unused-argument
-  maybe_download_and_extract()
-  if tf.gfile.Exists(eval_dir):
-    tf.gfile.DeleteRecursively(eval_dir)
-  tf.gfile.MakeDirs(eval_dir)
+def main(argv=None):
+  #maybe_download_and_extract() -> it use the data from the training set
+  if tf.gfile.Exists(validation_dir):
+    tf.gfile.DeleteRecursively(validation_dir)
+  tf.gfile.MakeDirs(validation_dir)
   evaluate()
 
 if __name__ == '__main__':

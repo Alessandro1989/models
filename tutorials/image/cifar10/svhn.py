@@ -59,9 +59,9 @@ BATCH_SIZE = svhn_readInput.BATCH_SIZE
 MOVING_AVERAGE_DECAY = 0.9999     # The decay to use for the moving average.
 
 #Learning rate:
-NUM_EPOCHS_PER_DECAY = 14.0      # 105 Epochs after which learning rate decays (350).
+NUM_EPOCHS_PER_DECAY = 12 #14.0      # 105 Epochs after which learning rate decays (350).
 LEARNING_RATE_DECAY_FACTOR = 0.05  # 0.1 Learning rate decay factor. (before 0.1)
-INITIAL_LEARNING_RATE = 0.101  #0.12    # Initial learning rate. (before was 0.1)
+INITIAL_LEARNING_RATE = 0.106#0.102  #0.12    # Initial learning rate. (before was 0.1)
 STAIRCASE = False #se è a true decrementa a intervalli discreti... (before was true)
 #for do tests (seems not wokring:
 #NUM_EPOCHS_PER_DECAY = 35.0      # Epochs after which learning rate decays (350).
@@ -187,6 +187,7 @@ def inference(images):
 
         norm1 = tf.nn.lrn(pool1, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75, name='norm1')
 
+
         # conv2
       with tf.variable_scope('conv2') as scope:
         kernel = _variable_with_weight_decay('weights',
@@ -234,6 +235,7 @@ def inference(images):
           norm3 = tf.nn.lrn(pool3, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75,
                             name='norm2')
 
+      """
       # conv4
       with tf.variable_scope('conv4') as scope:
           kernel = _variable_with_weight_decay('weights',
@@ -256,7 +258,7 @@ def inference(images):
           norm4 = tf.nn.lrn(pool4, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75,
                             name='norm4')
 
-      """
+      #''''
       # conv5
       with tf.variable_scope('conv5') as scope:
           kernel = _variable_with_weight_decay('weights',
@@ -286,7 +288,8 @@ def inference(images):
       # local3
       with tf.variable_scope('local3') as scope:
         # Move everything into depth so we can perform a single matrix multiply.
-        reshape = tf.reshape(norm4, [images.get_shape().as_list()[0], -1])
+        #reshape = tf.reshape(norm4, [images.get_shape().as_list()[0], -1])
+        reshape = tf.reshape(norm3, [images.get_shape().as_list()[0], -1])
         dim = reshape.get_shape()[1].value
         #weights = _variable_with_weight_decay('weights', shape=[dim, 384],
         #                                      stddev=0.04, wd=0.004)
