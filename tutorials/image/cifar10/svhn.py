@@ -165,7 +165,33 @@ def inference(images):
   #
   # conv1
   with tf.name_scope('network'):
+
       with tf.variable_scope('conv1') as scope:
+          kernel = _variable_with_weight_decay('weights',
+                                               #shape=[5, 5, 3, 64],
+                                               shape=[5, 5, 1, 64], #1 channel
+                                               #shape=[6, 6, 1, 90],
+                                               stddev=5e-2,
+                                               wd=None)
+          conv = tf.nn.conv2d(images, kernel, [1, 1, 1, 1], padding='SAME')
+          # biases = _variable_on_cpu('biases', [90], tf.constant_initializer(0.0))
+          biases = _variable_on_cpu('biases', [64], tf.constant_initializer(0.0))
+          pre_activation = tf.nn.bias_add(conv, biases)
+          conv1 = tf.nn.relu(pre_activation, name=scope.name)
+          _activation_summary(conv1)
+
+          # pool1
+          # pool1 = tf.nn.max_pool(conv1, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1],
+          #                      padding='SAME', name='pool1')
+          # norm1
+          pool1 = tf.nn.max_pool(conv1, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding='SAME', name='pool1')
+
+          norm1 = tf.nn.lrn(pool1, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75, name='norm1')
+
+
+      '''
+      
+            with tf.variable_scope('conv1') as scope:
         kernel = _variable_with_weight_decay('weights',
                                              #shape=[5, 5, 3, 64],
                                              #shape=[6, 6, 3, 90], #1 channel now?, right?
@@ -188,8 +214,7 @@ def inference(images):
         pool1 = tf.nn.max_pool(conv1, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1],padding='SAME', name='pool1')
 
         norm1 = tf.nn.lrn(pool1, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75, name='norm1')
-
-
+        
         # conv2
       with tf.variable_scope('conv2') as scope:
         kernel = _variable_with_weight_decay('weights',
@@ -260,7 +285,8 @@ def inference(images):
           norm4 = tf.nn.lrn(pool4, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75,
                             name='norm4')
 
-      #''''
+      
+      
       # conv5
       with tf.variable_scope('conv5') as scope:
           kernel = _variable_with_weight_decay('weights',
@@ -284,24 +310,27 @@ def inference(images):
                         name='norm4')
       """
 
+
+      '''
+
+      lamdaRegularization = 0.03
       #lamdaRegularization = 0.025
-      lamdaRegularization = 0.025
-      #0.3
       # local3
       with tf.variable_scope('local3') as scope:
         # Move everything into depth so we can perform a single matrix multiply.
         #reshape = tf.reshape(norm4, [images.get_shape().as_list()[0], -1])
-        reshape = tf.reshape(norm3, [images.get_shape().as_list()[0], -1])
+        reshape = tf.reshape(norm1, [images.get_shape().as_list()[0], -1])
         dim = reshape.get_shape()[1].value
-        #weights = _variable_with_weight_decay('weights', shape=[dim, 384],
-        #                                      stddev=0.04, wd=0.004)
-        weights = _variable_with_weight_decay('weights', shape=[dim, 700],
-                                              stddev=0.04, wd=lamdaRegularization)
-        biases = _variable_on_cpu('biases', [700], tf.constant_initializer(0.1))
+        weights = _variable_with_weight_decay('weights', shape=[dim, 192],
+                                              stddev=0.04, wd=0.004)
+        #weights = _variable_with_weight_decay('weights', shape=[dim, 700],
+        #                                      stddev=0.04, wd=lamdaRegularization)
+        #biases = _variable_on_cpu('biases', [700], tf.constant_initializer(0.1))
+        biases = _variable_on_cpu('biases', [192], tf.constant_initializer(0.1))
         local3 = tf.nn.relu(tf.matmul(reshape, weights) + biases, name=scope.name)
         _activation_summary(local3)
 
-
+      """
       # local4
       with tf.variable_scope('local4') as scope:
         #weights = _variable_with_weight_decay('weights', shape=[384, 192],
@@ -315,19 +344,20 @@ def inference(images):
         local4 = tf.nn.relu(tf.matmul(local3, weights) + biases, name=scope.name)
         _activation_summary(local4)
 
+      """
       # linear layer(WX + b),
       # We don't apply softmax here because
       # tf.nn.sparse_softmax_cross_entropy_with_logits accepts the unscaled logits
       # and performs the softmax internally for efficiency.
       with tf.variable_scope('softmax_linear') as scope:
-       # weights = _variable_with_weight_decay('weights', [192, NUM_CLASSES],
-       #                                       stddev=1/192.0, wd=None)
-       weights = _variable_with_weight_decay('weights', [700, NUM_CLASSES],
-                             stddev=1/700.0, wd=None)
+       weights = _variable_with_weight_decay('weights', [192, NUM_CLASSES],
+                                              stddev=1/192.0, wd=None)
+       #weights = _variable_with_weight_decay('weights', [700, NUM_CLASSES],
+       #                      stddev=1/700.0, wd=None)
        biases = _variable_on_cpu('biases', [NUM_CLASSES],
                                   tf.constant_initializer(0.0))
        #softmax_linear = tf.add(tf.matmul(local4, weights), biases, name=scope.name)
-       softmax_linear = tf.add(tf.matmul(local4, weights), biases, name=scope.name)
+       softmax_linear = tf.add(tf.matmul(local3, weights), biases, name=scope.name)
        _activation_summary(softmax_linear)
 
        return softmax_linear
