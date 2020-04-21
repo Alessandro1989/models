@@ -59,7 +59,7 @@ BATCH_SIZE = svhn_readInput.BATCH_SIZE
 MOVING_AVERAGE_DECAY = 0.9999     # The decay to use for the moving average.
 
 #Learning rate:
-NUM_EPOCHS_PER_DECAY = 12 #14.0      # 105 Epochs after which learning rate decays (350).
+NUM_EPOCHS_PER_DECAY = 20 #14.0      # 105 Epochs after which learning rate decays (350).
 LEARNING_RATE_DECAY_FACTOR = 0.05  # 0.1 Learning rate decay factor. (before 0.1)
 INITIAL_LEARNING_RATE = 0.106#0.102  #0.12    # Initial learning rate. (before was 0.1)
 STAIRCASE = False #se è a true decrementa a intervalli discreti... (before was true)
@@ -313,7 +313,8 @@ def inference(images):
 
       '''
 
-      lamdaRegularization = 0.03
+      #lamdaRegularization = 0.03
+      lambdaRegularization = 0.005
       #lamdaRegularization = 0.025
       # local3
       with tf.variable_scope('local3') as scope:
@@ -322,7 +323,7 @@ def inference(images):
         reshape = tf.reshape(norm1, [images.get_shape().as_list()[0], -1])
         dim = reshape.get_shape()[1].value
         weights = _variable_with_weight_decay('weights', shape=[dim, 192],
-                                              stddev=0.04, wd=0.004)
+                                              stddev=0.04, wd=lambdaRegularization)
         #weights = _variable_with_weight_decay('weights', shape=[dim, 700],
         #                                      stddev=0.04, wd=lamdaRegularization)
         #biases = _variable_on_cpu('biases', [700], tf.constant_initializer(0.1))
