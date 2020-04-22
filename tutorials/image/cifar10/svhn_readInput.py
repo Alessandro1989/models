@@ -24,7 +24,6 @@ NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 61813
 NUM_EXAMPLES_PER_EPOCH_FOR_VALIDATION = 6000
 NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 24514
 
-
 def main():
     print("main readinput")
     #readInfoAndCropDigits()
@@ -33,64 +32,89 @@ def main():
     #read_input_train()
 
 
-def elaborateInput(typeSet):
-
-  #if TypeSet == null error TODO:..
+def elaborateFilesTrain():
   """Construct distorted input for SVHN training using the Reader ops.
 
   Returns:
-    images: Images. 4D tensor of [batch_size, IMAGE_SIZE, IMAGE_SIZE, 3] size.
+    images: Images. 4D tensor of [batch_size, IMAGE_SIZE, IMAGE_SIZE, 1] size.
     labels: Labels. 1D tensor of [batch_size] size.
   """
 
   #crop digits if is necessary
-  if typeSet is TypeSet.TEST:
-    dir = Path(data_dirDigitsEval)
-  else:
-    dir = Path(data_dirDigitsTrain)
+  dir = Path(data_dirDigitsTrain)
 
   if (not dir.exists()):
-    if typeSet is not TypeSet.TEST:
-      readInfoAndCropDigits()
-    else:
-      readInfoAndCropDigitsEval()
-
+    readInfoAndCropDigits()
 
   filenames = list(dir.glob('*.png'))
   # converte in a list of string paths
   filenames = list(map(lambda x: str(x.absolute()), filenames))
 
   validationFilenames = []
-  if typeSet is not TypeSet.TEST: #In the test set i don't must delete any elements
-    for i in range(0, NUM_EXAMPLES_PER_EPOCH_FOR_VALIDATION):
-        validationFilenames.append(filenames.pop(random.randrange(len(filenames)-1)))
+
+  for i in range(0, NUM_EXAMPLES_PER_EPOCH_FOR_VALIDATION):
+    validationFilenames.append(filenames.pop(random.randrange(len(filenames)-1)))
+
+  with open('validationSet.txt', 'w') as f:
+      for nameFile in validationFilenames:
+          f.write("%s\n" % nameFile)
 
   # Create a queue that produces the filenames to read
   # (he converts the strings in tensors) and add them to the fifoqueue
-  filename_queue = tf.train.string_input_producer(filenames)
+  return elaborateInput(TypeSet.TRAIN, filenames)
 
+
+def elaborateFilesValidation():
+
+  f = open('validationSet.txt', "r")
+  validationFiles = f.readlines()
+  validationFiles = list(map(lambda x: x.replace("\n",""), validationFiles))
+  return elaborateInput(TypeSet.VALIDATION, validationFiles)
+
+def elaborateFilesTest():
+
+  """
+  Returns:
+    images: Images. 4D tensor of [batch_size, IMAGE_SIZE, IMAGE_SIZE, 1] size.
+    labels: Labels. 1D tensor of [batch_size] size.
+  """
+  #crop digits if is necessary
+  dir = Path(data_dirDigitsEval)
+  if (not dir.exists()):
+      readInfoAndCropDigitsEval()
+
+  filenames = list(dir.glob('*.png'))
+  # converte in a list of string paths
+  filenames = list(map(lambda x: str(x.absolute()), filenames))
+
+  return elaborateInput(TypeSet.TEST, filenames)
+
+
+def elaborateInput(typeSet, filenames):
+  # Create a queue that produces the filenames to read
+  # (he converts the strings in tensors) and add them to the fifoqueue
+  filename_queue = tf.train.string_input_producer(filenames)
   with tf.name_scope('reading'):
       reader = tf.WholeFileReader("reader")
       #restituisce una stringa che rappresenta il contenuto, e una stringa per il filename
       key,value = reader.read(filename_queue, "read")
-      img_u = tf.image.decode_jpeg(value, channels=1) # TRY WITH ONE CHANNEL
+      img_u = tf.image.decode_jpeg(value, channels=1)
       img_f = tf.cast(img_u, tf.float32)
 
       #data augmentation
+      #"""
       if typeSet is TypeSet.TRAIN:
         with tf.name_scope('data_augmentation'):
             img_f = tf.image.random_brightness(img_f, max_delta=63)  #63
             img_f = tf.image.random_contrast(img_f, lower=0.2, upper=1.8)
-
+      #"""
       # Subtract off the mean and divide by the variance of the pixels.
       float_image = tf.image.per_image_standardization(img_f)
 
       height = IMAGE_SIZE
       width = IMAGE_SIZE
       # Set the shapes of tensors.
-      #float_image.set_shape([height, width, 3]) #doesnt work!!-> seems just for infos.. it's not our case
 
-      #try a easier way
       splits = tf.string_split([key], "\\")
       pngName = splits.values[-1] #"xxx_label.png"
 
@@ -111,7 +135,6 @@ def elaborateInput(typeSet):
           numExample = NUM_EXAMPLES_PER_EPOCH_FOR_VALIDATION
       elif typeSet is TypeSet.TEST:
           numExample = NUM_EXAMPLES_PER_EPOCH_FOR_EVAL
-
 
       min_queue_examples = int(numExample * min_fraction_of_examples_in_queue)
       print ('Filling queue with %d SVHN images before starting to train. '

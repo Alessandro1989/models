@@ -101,7 +101,7 @@ def eval_once(saver, summary_writer, top_k_op, summary_op):
 def evaluate():
   """Eval CIFAR-10 for a number of steps."""
   with tf.Graph().as_default() as g:
-    images, labels = svhn_readInput.elaborateInput(TypeSet.TEST)
+    images, labels = svhn_readInput.elaborateFilesTest()
 
     # Build a Graph that computes the logits predictions from the
     # inference model.

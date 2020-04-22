@@ -48,7 +48,7 @@ def train():
     # Force input pipeline to CPU:0 to avoid operations sometimes ending up on GPU and resulting in a slow down.
     with tf.device('/cpu:0'):
       #images, labels = elaborateInput()
-      images, labels = svhn_readInput.elaborateInput(TypeSet.TRAIN)
+      images, labels = svhn_readInput.elaborateFilesTrain()
 
     # Build a Graph that computes the logits predictions from the
     # inference model.

@@ -5,19 +5,13 @@ from __future__ import print_function
 from datetime import datetime
 import math
 import time
-from six.moves import urllib
 
 import numpy as np
 import tensorflow as tf
 
 import svhn
-import os
-import sys
-import tarfile
+
 import svhn_readInput
-
-from enumTypeSet import TypeSet
-
 
 
 FLAGS = tf.app.flags.FLAGS
@@ -100,7 +94,7 @@ def eval_once(saver, summary_writer, top_k_op, summary_op):
 def evaluate():
   """Eval CIFAR-10 for a number of steps."""
   with tf.Graph().as_default() as g:
-    images, labels = svhn_readInput.elaborateInput(TypeSet.VALIDATION)
+    images, labels = svhn_readInput.elaborateFilesValidation()
 
     # Build a Graph that computes the logits predictions from the
     # inference model.
