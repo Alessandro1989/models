@@ -313,9 +313,7 @@ def inference(images):
 
       '''
 
-      #lamdaRegularization = 0.03
-      lambdaRegularization = 0.005
-      #lamdaRegularization = 0.025
+      lambdaRegularization = 0.005 #0.04 peggio (0.9) 0.02 (migliore 91,4 circa)
       # local3
       with tf.variable_scope('local3') as scope:
         # Move everything into depth so we can perform a single matrix multiply.

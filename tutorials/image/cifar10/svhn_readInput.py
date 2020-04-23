@@ -50,14 +50,21 @@ def elaborateFilesTrain():
   # converte in a list of string paths
   filenames = list(map(lambda x: str(x.absolute()), filenames))
 
-  validationFilenames = []
-
-  for i in range(0, NUM_EXAMPLES_PER_EPOCH_FOR_VALIDATION):
-    validationFilenames.append(filenames.pop(random.randrange(len(filenames)-1)))
-
-  with open('validationSet.txt', 'w') as f:
-      for nameFile in validationFilenames:
-          f.write("%s\n" % nameFile)
+  f = open('validationSet.txt', "r")
+  validationFiles = f.readlines()
+  #file validation set empty..
+  if(len(validationFiles) < NUM_EXAMPLES_PER_EPOCH_FOR_VALIDATION):
+      validationFiles = []
+      for i in range(0, NUM_EXAMPLES_PER_EPOCH_FOR_VALIDATION):
+        validationFiles.append(filenames.pop(random.randrange(len(filenames)-1)))
+      with open('validationSet.txt', 'w') as f:
+          for nameFile in validationFiles:
+              f.write("%s\n" % nameFile)
+  else:
+      validationFiles = list(map(lambda x: x.replace("\n", ""), validationFiles))
+      filenamesCopy = filenames.copy()
+      for namefile in validationFiles:
+          filenames.remove(namefile)
 
   # Create a queue that produces the filenames to read
   # (he converts the strings in tensors) and add them to the fifoqueue
