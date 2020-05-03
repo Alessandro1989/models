@@ -109,7 +109,7 @@ def elaborateInput(typeSet, filenames):
       img_f = tf.cast(img_u, tf.float32)
 
       #data augmentation
-      #"""
+      """
       if typeSet is TypeSet.TRAIN:
         with tf.name_scope('data_augmentation'):
             img_f = tf.image.random_brightness(img_f, max_delta=63)  #63

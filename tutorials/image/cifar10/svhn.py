@@ -59,7 +59,7 @@ BATCH_SIZE = svhn_readInput.BATCH_SIZE
 MOVING_AVERAGE_DECAY = 0.9999     # The decay to use for the moving average.
 
 #Learning rate:
-NUM_EPOCHS_PER_DECAY = 20 #14.0      # 105 Epochs after which learning rate decays (350).
+NUM_EPOCHS_PER_DECAY = 50 #20      # 105 Epochs after which learning rate decays (350).
 LEARNING_RATE_DECAY_FACTOR = 0.05  # 0.1 Learning rate decay factor. (before 0.1)
 INITIAL_LEARNING_RATE = 0.106#0.102  #0.12    # Initial learning rate. (before was 0.1)
 STAIRCASE = False #se è a true decrementa a intervalli discreti... (before was true)
@@ -313,7 +313,7 @@ def inference(images):
 
       '''
 
-      lambdaRegularization = 0.005 #0.04 peggio (0.9) 0.02 (migliore 91,4 circa)
+      lambdaRegularization = 0.005
       # local3
       with tf.variable_scope('local3') as scope:
         # Move everything into depth so we can perform a single matrix multiply.
