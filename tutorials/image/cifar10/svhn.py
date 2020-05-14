@@ -293,6 +293,15 @@ def inference(images):
         local2 = tf.nn.relu(tf.matmul(local1, weights) + biases, name=scope.name)
         _activation_summary(local2)
 
+      """
+      # local3
+      with tf.variable_scope('local3') as scope:
+        weights = _variable_with_weight_decay('weights', shape=[400, 200],
+                                              stddev=0.04, wd=lambdaRegularization)
+        biases = _variable_on_cpu('biases', [200], tf.constant_initializer(0.1))
+        local3 = tf.nn.relu(tf.matmul(local2, weights) + biases, name=scope.name)
+        _activation_summary(local3)
+      """
 
       # linear layer(WX + b),
       # We don't apply softmax here because
