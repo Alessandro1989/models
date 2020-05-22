@@ -35,12 +35,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os
 import re
-import sys
-import tarfile
 
-from six.moves import urllib
 import tensorflow as tf
 
 import svhn_readInput
@@ -63,11 +59,7 @@ NUM_EPOCHS_PER_DECAY = 50 #20      # 105 Epochs after which learning rate decays
 LEARNING_RATE_DECAY_FACTOR = 0.05  # 0.1 Learning rate decay factor. (before 0.1)
 INITIAL_LEARNING_RATE = 0.106#0.102  #0.12    # Initial learning rate. (before was 0.1)
 STAIRCASE = False #se è a true decrementa a intervalli discreti... (before was true)
-#for do tests (seems not wokring:
-#NUM_EPOCHS_PER_DECAY = 35.0      # Epochs after which learning rate decays (350).
-#LEARNING_RATE_DECAY_FACTOR = 0.1  # Learning rate decay factor. (before 0.1)
-#INITIAL_LEARNING_RATE = 0.12  #0.12    # Initial learning rate. (before was 0.1)
-#STAIRCASE = False #se è a true decrementa a intervalli discreti... (before was true)
+
 
 # If a model is trained with multiple GPUs, prefix all Op names with tower_name
 # to differentiate the operations. Note that this prefix is removed from the
@@ -177,10 +169,6 @@ def inference(images):
           conv1 = tf.nn.relu(pre_activation, name=scope.name)
           _activation_summary(conv1)
 
-          # pool1
-          # pool1 = tf.nn.max_pool(conv1, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1],
-          #                      padding='SAME', name='pool1')
-          # norm1
           pool1 = tf.nn.max_pool(conv1, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding='SAME', name='pool1')
 
           norm1 = tf.nn.lrn(pool1, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75, name='norm1')
@@ -272,6 +260,7 @@ def inference(images):
     
       """
       lambdaRegularization = 0.005
+
       # local1
       with tf.variable_scope('local1') as scope:
         # Move everything into depth so we can perform a single matrix multiply.
